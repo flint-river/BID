@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Year Timeline - Polish Bid System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .header {
+            background: rgba(0,0,0,0.3);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 2px solid #4ecca3;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header h1 {
+            color: #4ecca3;
+            font-size: 24px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .control-btn {
+            padding: 8px 16px;
+            border: 2px solid #4ecca3;
+            background: transparent;
+            color: #4ecca3;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .control-btn:hover, .control-btn.active {
+            background: #4ecca3;
+            color: #000;
+        }
+
+        .back-btn {
+            padding: 8px 16px;
+            background: #333;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-btn:hover {
+            background: #444;
+        }
+
+        .month-nav {
+            display: flex;
+            gap: 5px;
+            background: rgba(0,0,0,0.3);
+            padding: 10px 20px;
+            overflow-x: auto;
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 60px;
+            z-index: 99;
+        }
+
+        .month-btn {
+            padding: 6px 14px;
+            background: #1a1a2e;
+            border: 1px solid #4ecca3;
+            color: #4ecca3;
+            border-radius: 4px;
+            cursor: pointer;
+            white-space: nowrap;
+            font-size: 12px;
+        }
+
+        .month-btn:hover {
+            background: #4ecca3;
+            color: #000;
+        }
+
+        .timeline-container {
+            overflow-x: auto;
+            overflow-y: auto;
+            max-height: calc(100vh - 130px);
+            position: relative;
+        }
+
+        /* Solid backdrop behind all header rows to prevent see-through */
+        .header-backdrop {
+            position: absolute;
+            top: 0;
+            left: 71px; /* After line-header column */
+            right: 0;
+            height: 69px; /* Height of all 3 header rows (23px each) */
+            background: #0f3460;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        /* Corner backdrop for sticky line-header column in header rows */
+        .corner-backdrop {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 71px; /* Width of line-header column */
+            height: 69px; /* Height of all 3 header rows */
+            background: #1a1a2e;
+            z-index: 6; /* Above header-backdrop but below header cells */
+            pointer-events: none;
+        }
+
+        /* Wrapper to hold backdrops in correct position */
+        .backdrop-wrapper {
+            position: sticky;
+            top: 0;
+            left: 0;
+            height: 0;
+            z-index: 5;
+            overflow: visible;
+        }
+
+        .timeline-table {
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 10px;
+        }
+
+        .timeline-table th,
+        .timeline-table td {
+            border: 1px solid #333;
+            border-top: none;
+            border-left: none;
+            text-align: center;
+            min-width: 38px;
+            max-width: 38px;
+            height: 22px;
+            padding: 2px;
+        }
+
+        /* Add left border to first column */
+        .timeline-table th:first-child,
+        .timeline-table td:first-child {
+            border-left: 1px solid #333;
+        }
+
+        /* Add top border to first header row */
+        .timeline-table thead tr:first-child th {
+            border-top: 1px solid #333;
+        }
+
+        .timeline-table thead th {
+            background: #0f3460;
+            color: #4ecca3;
+            position: sticky;
+            z-index: 10;
+            font-weight: normal;
+            border-top: 1px solid #333;
+        }
+
+        /* First row - Month names - stays at very top */
+        .timeline-table thead tr:nth-child(1) th {
+            top: 0;
+            font-weight: bold;
+            font-size: 11px;
+            background: #0f3460;
+            z-index: 12;
+        }
+
+        /* Second row - Day numbers - below month row */
+        .timeline-table thead tr:nth-child(2) th {
+            top: 23px;
+            background: #0f3460;
+            z-index: 11;
+        }
+
+        /* Third row - Day of week - below day numbers */
+        .timeline-table thead tr:nth-child(3) th {
+            top: 46px;
+            background: #0f3460;
+            z-index: 10;
+        }
+
+        /* The thead itself gets a background to fill any micro-gaps */
+        .timeline-table thead {
+            background: #0f3460;
+        }
+
+        .line-header {
+            position: sticky;
+            left: 0;
+            background: #1a1a2e !important;
+            z-index: 5;
+            min-width: 70px !important;
+            max-width: 70px !important;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        /* Header row line-headers need higher z-index to stay above data */
+        .timeline-table thead .line-header {
+            z-index: 20;
+            background: #1a1a2e !important;
+        }
+
+        .line-header:hover {
+            background: #2a2a4e !important;
+        }
+
+        .line-header.favorite {
+            color: #FFD700;
+        }
+
+        .day-cell {
+            cursor: pointer;
+            font-size: 9px;
+            font-weight: bold;
+            transition: transform 0.1s;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+
+        .day-cell:hover {
+            transform: scale(1.2);
+            z-index: 20;
+            position: relative;
+            box-shadow: 0 0 10px rgba(78, 204, 163, 0.5);
+        }
+
+        .weekend {
+            opacity: 0.9;
+        }
+
+        /* Weekend header styling */
+        .weekend-header {
+            background: #2d1b4e !important;
+            color: #c9a0ff !important;
+        }
+
+        /* Weekend cell shading - purple tint overlay */
+        .weekend-cell {
+            box-shadow: inset 0 0 0 100px rgba(75, 0, 130, 0.25);
+        }
+
+        /* Holiday styling */
+        .holiday-header {
+            background: #FFD700 !important;
+            color: #000 !important;
+            font-weight: bold !important;
+            border-left: 3px solid #FF6B00 !important;
+            border-right: 3px solid #FF6B00 !important;
+        }
+
+        .holiday-cell {
+            border-left: 3px solid #FF6B00 !important;
+            border-right: 3px solid #FF6B00 !important;
+        }
+
+        /* Alternating month shading */
+        .month-even {
+            filter: brightness(1.0);
+        }
+
+        .month-odd {
+            filter: brightness(0.85);
+        }
+
+        /* Month header alternating */
+        .month-header-even {
+            background: #0f3460 !important;
+        }
+
+        .month-header-odd {
+            background: #0a2540 !important;
+        }
+
+        /* Holiday column header indicator in month row */
+        .month-has-holiday {
+            color: #FFD700 !important;
+        }
+
+        /* Tooltip */
+        .tooltip {
+            display: none;
+            position: fixed;
+            background: #1a1a2e;
+            border: 2px solid #4ecca3;
+            border-radius: 8px;
+            padding: 12px;
+            z-index: 1000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.5);
+            min-width: 180px;
+        }
+
+        .tooltip.show {
+            display: block;
+        }
+
+        .tooltip-title {
+            color: #4ecca3;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .tooltip-content {
+            color: #fff;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .tooltip-btn {
+            margin-top: 10px;
+            padding: 6px 12px;
+            background: #4ecca3;
+            color: #000;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .tooltip-btn:hover {
+            background: #3db892;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #4ecca3;
+            font-size: 18px;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #ccc;
+            font-size: 13px;
+        }
+
+        .filter-select {
+            padding: 6px 10px;
+            background: #1a1a2e;
+            border: 1px solid #4ecca3;
+            color: #fff;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Year Timeline - 2026-2027 Bid</h1>
+        <div class="controls">
+            <div class="filter-group">
+                <label>Show:</label>
+                <select id="lineFilter" class="filter-select" onchange="applyFilters()">
+                    <option value="all">All Lines</option>
+                    <option value="favorites">Favorites Only</option>
+                    <option value="ssom">SSOMs Only</option>
+                    <option value="som">SOMs Only</option>
+                </select>
+            </div>
+            <button class="control-btn" onclick="scrollToToday()">Today</button>
+            <a href="#" onclick="goBackToBidApp(); return false;" class="back-btn">Back to Bid App</a>
+        </div>
+    </div>
+
+    <div class="month-nav" id="monthNav"></div>
+
+    <div class="timeline-container" id="timelineContainer">
+        <div class="loading">Loading timeline...</div>
+    </div>
+
+    <div class="tooltip" id="tooltip">
+        <div class="tooltip-title" id="tooltipTitle"></div>
+        <div class="tooltip-content" id="tooltipContent"></div>
+        <button class="tooltip-btn" id="tooltipBtn" onclick="openLineCalendar()">Open Full Calendar</button>
+    </div>
+
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- App Scripts -->
+    <script src="BID_CONFIG.js"></script>
+    <script src="bid_year_integration.js"></script>
+    <script src="pattern_loader.js"></script>
+    <script src="calendar_generator.js"></script>
+
+    <script>
+        // Color map - SAME defaults as bidding_final.js
+        const COLOR_MAP = {
+            1: '#FFC000',  // Gold - SSOM
+            2: '#00FFFF',  // Cyan
+            3: '#00B0F0',  // Blue
+            4: '#FF0000',  // Red
+            5: '#FFCCFF',  // Pink
+            6: '#C0C0C0',  // Gray/Silver
+            7: '#FFFF00',  // Yellow - Relief XX
+            8: '#00FF00',  // Green - Off days
+            9: '#FF66FF',  // Magenta
+            99: '#7030A0'  // Purple - Mixed
+        };
+
+        // Codes that need light (white) text
+        const LIGHT_TEXT_CODES = [4, 99];
+
+        // Load saved color settings from localStorage/Firebase to stay in sync with main app
+        async function loadColorSettings() {
+            const bidYear = BID_CONFIG.getBidYear();
+            const baseUrl = BID_CONFIG.getFirebaseUrl();
+
+            // Try Firebase first
+            try {
+                const colorPath = bidYear === 2026
+                    ? '/colorSettings.json'
+                    : `/bid${bidYear}/colorSettings.json`;
+                const response = await fetch(`${baseUrl}${colorPath}`);
+                if (response.ok) {
+                    const settings = await response.json();
+                    if (settings) {
+                        Object.keys(settings).forEach(key => {
+                            const code = parseInt(key);
+                            if (!isNaN(code) && settings[key]) {
+                                COLOR_MAP[code] = settings[key];
+                            }
+                        });
+                        console.log('[YearTimeline] Loaded color settings from Firebase');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('[YearTimeline] Firebase color load failed:', e.message);
+            }
+
+            // Fallback to localStorage
+            try {
+                const saved = localStorage.getItem('bidColorSettings');
+                if (saved) {
+                    const settings = JSON.parse(saved);
+                    Object.keys(settings).forEach(key => {
+                        const code = parseInt(key);
+                        if (!isNaN(code) && settings[key]) {
+                            COLOR_MAP[code] = settings[key];
+                        }
+                    });
+                    console.log('[YearTimeline] Loaded color settings from localStorage');
+                }
+            } catch (e) {
+                console.warn('[YearTimeline] localStorage color load failed:', e);
+            }
+        }
+
+        // Load custom groups from Firebase/localStorage
+        async function loadCustomGroups() {
+            const bidYear = BID_CONFIG.getBidYear();
+            const baseUrl = BID_CONFIG.getFirebaseUrl();
+
+            // Try Firebase first
+            try {
+                const groupPath = bidYear === 2026
+                    ? '/customGroups.json'
+                    : `/bid${bidYear}/customGroups.json`;
+                const response = await fetch(`${baseUrl}${groupPath}`);
+                if (response.ok) {
+                    const groups = await response.json();
+                    if (groups) {
+                        Object.keys(groups).forEach(code => {
+                            const numCode = parseInt(code);
+                            if (groups[code].color) {
+                                COLOR_MAP[numCode] = groups[code].color;
+                            }
+                        });
+                        console.log('[YearTimeline] Loaded custom groups from Firebase');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('[YearTimeline] Firebase custom groups load failed:', e.message);
+            }
+
+            // Fallback to localStorage
+            try {
+                const saved = localStorage.getItem('bidCustomGroups');
+                if (saved) {
+                    const groups = JSON.parse(saved);
+                    Object.keys(groups).forEach(code => {
+                        const numCode = parseInt(code);
+                        if (groups[code].color) {
+                            COLOR_MAP[numCode] = groups[code].color;
+                        }
+                    });
+                    console.log('[YearTimeline] Loaded custom groups from localStorage');
+                }
+            } catch (e) {
+                console.warn('[YearTimeline] localStorage custom groups load failed:', e);
+            }
+        }
+
+        let calendar = null;
+        let currentTooltipLine = null;
+        let favorites = [];
+        let HOLIDAYS = {}; // Will be populated dynamically based on bid year
+
+        // Generate holidays for the current bid year
+        function generateHolidaysForYear(bidYear) {
+            // Standard US federal holidays that fall within April-March bid year
+            // These are approximate - actual dates vary by year
+            const holidays = {};
+
+            // Bid year runs April of bidYear to March of bidYear+1
+
+            // Memorial Day - Last Monday of May
+            const memDay = getLastMondayOfMonth(bidYear, 4); // May
+            holidays[`${bidYear}-${memDay.getMonth() + 1}-${memDay.getDate()}`] = 'Memorial Day';
+
+            // Independence Day - July 4
+            holidays[`${bidYear}-7-4`] = 'Independence Day';
+
+            // Labor Day - First Monday of September
+            const laborDay = getFirstMondayOfMonth(bidYear, 8); // September
+            holidays[`${bidYear}-${laborDay.getMonth() + 1}-${laborDay.getDate()}`] = 'Labor Day';
+
+            // Thanksgiving - Fourth Thursday of November
+            const thanksgiving = getNthWeekdayOfMonth(bidYear, 10, 4, 4); // November, Thursday, 4th
+            holidays[`${bidYear}-${thanksgiving.getMonth() + 1}-${thanksgiving.getDate()}`] = 'Thanksgiving';
+            const dayAfter = new Date(thanksgiving);
+            dayAfter.setDate(dayAfter.getDate() + 1);
+            holidays[`${bidYear}-${dayAfter.getMonth() + 1}-${dayAfter.getDate()}`] = 'Day after Thanksgiving';
+
+            // Christmas Eve and Day
+            holidays[`${bidYear}-12-24`] = 'Christmas Eve';
+            holidays[`${bidYear}-12-25`] = 'Christmas Day';
+
+            // New Years Eve and Day (next calendar year)
+            holidays[`${bidYear}-12-31`] = 'New Years Eve';
+            holidays[`${bidYear + 1}-1-1`] = 'New Years Day';
+
+            // MLK Day - Third Monday of January (next calendar year)
+            const mlkDay = getNthWeekdayOfMonth(bidYear + 1, 0, 1, 3); // January, Monday, 3rd
+            holidays[`${bidYear + 1}-${mlkDay.getMonth() + 1}-${mlkDay.getDate()}`] = 'MLK Day';
+
+            // Presidents Day - Third Monday of February (next calendar year)
+            const presDay = getNthWeekdayOfMonth(bidYear + 1, 1, 1, 3); // February, Monday, 3rd
+            holidays[`${bidYear + 1}-${presDay.getMonth() + 1}-${presDay.getDate()}`] = 'Presidents Day';
+
+            return holidays;
+        }
+
+        // Helper: Get last Monday of a month
+        function getLastMondayOfMonth(year, month) {
+            const lastDay = new Date(year, month + 1, 0);
+            const dayOfWeek = lastDay.getDay();
+            const diff = (dayOfWeek >= 1) ? (dayOfWeek - 1) : 6;
+            lastDay.setDate(lastDay.getDate() - diff);
+            return lastDay;
+        }
+
+        // Helper: Get first Monday of a month
+        function getFirstMondayOfMonth(year, month) {
+            const firstDay = new Date(year, month, 1);
+            const dayOfWeek = firstDay.getDay();
+            const diff = (dayOfWeek <= 1) ? (1 - dayOfWeek) : (8 - dayOfWeek);
+            firstDay.setDate(firstDay.getDate() + diff);
+            return firstDay;
+        }
+
+        // Helper: Get nth weekday of a month (weekday: 0=Sun, 1=Mon, ..., 4=Thu)
+        function getNthWeekdayOfMonth(year, month, weekday, n) {
+            const firstDay = new Date(year, month, 1);
+            const dayOfWeek = firstDay.getDay();
+            let diff = weekday - dayOfWeek;
+            if (diff < 0) diff += 7;
+            const firstOccurrence = 1 + diff;
+            const nthDay = firstOccurrence + (n - 1) * 7;
+            return new Date(year, month, nthDay);
+        }
+
+        // Check if a date string is a holiday
+        function isHoliday(dateStr) {
+            return HOLIDAYS[dateStr] !== undefined;
+        }
+
+        // Get holiday name
+        function getHolidayName(dateStr) {
+            return HOLIDAYS[dateStr] || '';
+        }
+
+        // Get color for a dayCode - matches bidding_final.js
+        function getColorForCode(dayCode) {
+            if (COLOR_MAP[dayCode]) {
+                return COLOR_MAP[dayCode];
+            }
+            // Check dynamic colors for new desk codes
+            if (typeof window.DYNAMIC_COLOR_MAP !== 'undefined' && window.DYNAMIC_COLOR_MAP[dayCode]) {
+                return window.DYNAMIC_COLOR_MAP[dayCode];
+            }
+            return '#ddd';
+        }
+
+        // Check if code needs light text - matches bidding_final.js
+        function needsLightText(dayCode) {
+            if (LIGHT_TEXT_CODES.includes(dayCode)) {
+                return true;
+            }
+            // For dynamic colors, check brightness
+            if (typeof window.DYNAMIC_COLOR_MAP !== 'undefined' && window.DYNAMIC_COLOR_MAP[dayCode]) {
+                const color = window.DYNAMIC_COLOR_MAP[dayCode];
+                return isColorDark(color);
+            }
+            return false;
+        }
+
+        // Check if a hex color is dark
+        function isColorDark(hexColor) {
+            if (!hexColor || hexColor === 'transparent') return false;
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substr(0, 2), 16);
+            const g = parseInt(hex.substr(2, 2), 16);
+            const b = parseInt(hex.substr(4, 2), 16);
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness < 128;
+        }
+
+        // Load favorites from localStorage
+        function loadFavorites() {
+            try {
+                const stored = localStorage.getItem('polishBidFavorites');
+                return stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // Go back to Bid App (preserving bid year parameter)
+        function goBackToBidApp() {
+            const bidYear = BID_CONFIG.getBidYear();
+            const defaultYear = BID_CONFIG.DEFAULT_BID_YEAR;
+            let url = 'index.html';
+
+            // Pass bidYear parameter if not using default year
+            if (bidYear !== defaultYear) {
+                url += `?bidYear=${bidYear}`;
+            }
+
+            window.location.href = url;
+        }
+
+        // Generate month navigation
+        function generateMonthNav() {
+            const nav = document.getElementById('monthNav');
+            const bidYear = BID_CONFIG.getBidYear();
+            const months = [
+                { name: 'Apr', year: bidYear, month: 3 },
+                { name: 'May', year: bidYear, month: 4 },
+                { name: 'Jun', year: bidYear, month: 5 },
+                { name: 'Jul', year: bidYear, month: 6 },
+                { name: 'Aug', year: bidYear, month: 7 },
+                { name: 'Sep', year: bidYear, month: 8 },
+                { name: 'Oct', year: bidYear, month: 9 },
+                { name: 'Nov', year: bidYear, month: 10 },
+                { name: 'Dec', year: bidYear, month: 11 },
+                { name: 'Jan', year: bidYear + 1, month: 0 },
+                { name: 'Feb', year: bidYear + 1, month: 1 },
+                { name: 'Mar', year: bidYear + 1, month: 2 }
+            ];
+
+            nav.innerHTML = months.map(m =>
+                `<button class="month-btn" onclick="scrollToMonth(${m.year}, ${m.month})">${m.name} ${m.year}</button>`
+            ).join('');
+        }
+
+        // Scroll to a specific month
+        function scrollToMonth(year, month) {
+            const cellId = `day-${year}-${month + 1}-1`;
+            const cell = document.getElementById(cellId);
+            if (cell) {
+                const container = document.getElementById('timelineContainer');
+                const lineHeaderWidth = 75; // Width of sticky line column
+                const cellLeft = cell.offsetLeft;
+                container.scrollTo({
+                    left: cellLeft - lineHeaderWidth,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Scroll to today
+        function scrollToToday() {
+            const today = new Date();
+            const cellId = `day-${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
+            const cell = document.getElementById(cellId);
+            if (cell) {
+                cell.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                cell.style.outline = '3px solid #4ecca3';
+                setTimeout(() => cell.style.outline = '', 2000);
+            }
+        }
+
+        // Get display text for shift - show full code for work, blank for off
+        function getShiftDisplay(shift) {
+            if (shift === '--' || shift === '-' || !shift) {
+                return '';
+            }
+            return shift;
+        }
+
+        // Generate the timeline table
+        function generateTimeline() {
+            const container = document.getElementById('timelineContainer');
+            const dateRange = BID_CONFIG.getBidYearDateRange();
+            const startDate = dateRange.startDate;
+            const endDate = dateRange.endDate;
+
+            // Build date headers
+            let monthRow = '<tr><th class="line-header">Line</th>';
+            let dayRow = '<tr><th class="line-header"></th>';
+            let weekdayRow = '<tr><th class="line-header"></th>';
+
+            const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            let currentDate = new Date(startDate);
+            let currentMonth = -1;
+            let monthColSpan = 0;
+            let monthCells = [];
+            let monthIndex = 0;
+            let dayMonthIndices = []; // Track which month index each day belongs to
+            let dayIsWeekend = []; // Track if each day is a weekend
+
+            while (currentDate <= endDate) {
+                const month = currentDate.getMonth();
+                const day = currentDate.getDate();
+                const year = currentDate.getFullYear();
+                const dayOfWeek = currentDate.getDay();
+                const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+                if (month !== currentMonth) {
+                    if (currentMonth !== -1) {
+                        monthCells.push({ month: currentMonth, year: currentDate.getFullYear(), span: monthColSpan, idx: monthIndex });
+                        monthIndex++;
+                    }
+                    currentMonth = month;
+                    monthColSpan = 0;
+                }
+                monthColSpan++;
+                dayMonthIndices.push(monthIndex);
+                dayIsWeekend.push(isWeekend);
+
+                const dateKey = `${year}-${month + 1}-${day}`;
+                const holidayName = getHolidayName(dateKey);
+                const holidayClass = holidayName ? 'holiday-header' : '';
+                const holidayTitle = holidayName ? ` title="${holidayName}"` : '';
+                const monthShadeClass = monthIndex % 2 === 0 ? 'month-header-even' : 'month-header-odd';
+                const weekendHeaderClass = isWeekend ? 'weekend-header' : '';
+
+                dayRow += `<th id="day-${year}-${month + 1}-${day}" class="${holidayClass} ${monthShadeClass} ${weekendHeaderClass}"${holidayTitle}>${day}</th>`;
+                weekdayRow += `<th class="${monthShadeClass} ${weekendHeaderClass}">${weekdayNames[dayOfWeek]}</th>`;
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            monthCells.push({ month: currentMonth, year: endDate.getFullYear(), span: monthColSpan, idx: monthIndex });
+
+            const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            monthRow += monthCells.map(m => {
+                const headerClass = m.idx % 2 === 0 ? 'month-header-even' : 'month-header-odd';
+                return `<th colspan="${m.span}" class="${headerClass}">${monthNames[m.month]} ${m.year}</th>`;
+            }).join('');
+
+            monthRow += '</tr>';
+            dayRow += '</tr>';
+            weekdayRow += '</tr>';
+
+            // Build line rows
+            let lineRows = '';
+            const lines = window.ANNUAL_BID || [];
+
+            lines.forEach(line => {
+                const lineKey = line.lineNbr;
+                const displayNum = line.lineNumber || lineKey.split('-')[0];
+                const lineType = line.lineDesc;
+                const isFavorite = favorites.includes(lineKey);
+                const calData = calendar[lineKey];
+
+                if (!calData) return;
+
+                let cells = `<td class="line-header ${isFavorite ? 'favorite' : ''}"
+                    data-line="${lineKey}" data-type="${lineType}"
+                    onclick="openLineCalendar('${lineKey}')"
+                    title="${isFavorite ? '* ' : ''}Line ${displayNum} (${lineType})">${isFavorite ? '* ' : ''}${displayNum}-${lineType}</td>`;
+
+                let cellDate = new Date(startDate);
+                let dayIndex = 0;
+                while (cellDate <= endDate) {
+                    const dateStr = `${cellDate.getFullYear()}-${cellDate.getMonth() + 1}-${cellDate.getDate()}`;
+                    const dayData = calData.days[dateStr];
+                    const shift = dayData ? dayData.s : '--';
+
+                    // Get dayCode using the line's pattern dayCode for this position
+                    const patternIndex = dayIndex % 12;
+                    const dayCode = line.dayCodes ? line.dayCodes[patternIndex] : 8;
+
+                    // For off days, use dayCode 8 (green)
+                    const effectiveDayCode = (shift === '--' || shift === '-' || !shift) ? 8 : dayCode;
+
+                    const color = getColorForCode(effectiveDayCode);
+                    const textColor = needsLightText(effectiveDayCode) ? '#fff' : '#000';
+                    const isOverride = dayData && dayData.b === 1;
+                    const displayText = getShiftDisplay(shift);
+                    const isHol = isHoliday(dateStr);
+                    const holidayCellClass = isHol ? 'holiday-cell' : '';
+                    const monthShadeClass = dayMonthIndices[dayIndex] % 2 === 0 ? 'month-even' : 'month-odd';
+                    const weekendCellClass = dayIsWeekend[dayIndex] ? 'weekend-cell' : '';
+
+                    cells += `<td class="day-cell ${holidayCellClass} ${monthShadeClass} ${weekendCellClass}"
+                        style="background:${color}; color:${textColor}; ${isOverride ? 'border:2px solid red;' : ''}"
+                        data-line="${lineKey}"
+                        data-date="${dateStr}"
+                        data-shift="${shift}"
+                        onmouseenter="showTooltip(event, '${lineKey}', '${dateStr}', '${shift}')"
+                        onmouseleave="hideTooltip()"
+                        onclick="handleCellClick('${lineKey}', '${dateStr}')">${displayText}</td>`;
+
+                    cellDate.setDate(cellDate.getDate() + 1);
+                    dayIndex++;
+                }
+
+                lineRows += `<tr data-line="${lineKey}" data-type="${lineType}" data-favorite="${isFavorite}">${cells}</tr>`;
+            });
+
+            container.innerHTML = `
+                <div class="backdrop-wrapper">
+                    <div class="header-backdrop"></div>
+                    <div class="corner-backdrop"></div>
+                </div>
+                <table class="timeline-table">
+                    <thead>${monthRow}${dayRow}${weekdayRow}</thead>
+                    <tbody>${lineRows}</tbody>
+                </table>
+            `;
+
+            applyFilters();
+        }
+
+        // Show tooltip
+        function showTooltip(event, lineKey, dateStr, shift) {
+            const tooltip = document.getElementById('tooltip');
+            const title = document.getElementById('tooltipTitle');
+            const content = document.getElementById('tooltipContent');
+
+            const line = (window.ANNUAL_BID || []).find(l => l.lineNbr === lineKey);
+            const displayNum = line ? (line.lineNumber || lineKey.split('-')[0]) : lineKey;
+            const lineType = line ? line.lineDesc : '';
+
+            const [year, month, day] = dateStr.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            const dateDisplay = date.toLocaleDateString('en-US', {
+                weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+            });
+
+            title.textContent = `Line ${displayNum} (${lineType})`;
+            const holidayName = getHolidayName(dateStr);
+            content.innerHTML = `
+                <div><strong>Date:</strong> ${dateDisplay}</div>
+                ${holidayName ? `<div style="color:#FFD700;"><strong>Holiday:</strong> ${holidayName}</div>` : ''}
+                <div><strong>Shift:</strong> ${shift}</div>
+            `;
+
+            currentTooltipLine = lineKey;
+
+            // Position tooltip
+            const x = Math.min(event.clientX + 15, window.innerWidth - 220);
+            const y = Math.min(event.clientY + 15, window.innerHeight - 150);
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+            tooltip.classList.add('show');
+        }
+
+        // Hide tooltip
+        function hideTooltip() {
+            document.getElementById('tooltip').classList.remove('show');
+        }
+
+        // Handle cell click
+        function handleCellClick(lineKey, dateStr) {
+            currentTooltipLine = lineKey;
+            openLineCalendar(lineKey);
+        }
+
+        // Open line calendar in main app
+        function openLineCalendar(lineKey) {
+            const line = lineKey || currentTooltipLine;
+            if (line) {
+                const bidYear = BID_CONFIG.getBidYear();
+                const defaultYear = BID_CONFIG.DEFAULT_BID_YEAR;
+                let url = `index.html?line=${encodeURIComponent(line)}`;
+
+                // Also pass bidYear parameter if not using default year
+                if (bidYear !== defaultYear) {
+                    url += `&bidYear=${bidYear}`;
+                }
+
+                window.location.href = url;
+            }
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const filter = document.getElementById('lineFilter').value;
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const lineType = row.getAttribute('data-type');
+                const isFavorite = row.getAttribute('data-favorite') === 'true';
+
+                let show = true;
+
+                switch (filter) {
+                    case 'favorites':
+                        show = isFavorite;
+                        break;
+                    case 'ssom':
+                        show = lineType === 'SSOM';
+                        break;
+                    case 'som':
+                        show = lineType === 'SOM';
+                        break;
+                    default:
+                        show = true;
+                }
+
+                row.style.display = show ? '' : 'none';
+            });
+        }
+
+        // Load patterns directly from Firebase for non-default years
+        async function loadPatternsFromFirebase() {
+            const firebaseUrl = BID_CONFIG.getFirebaseUrl();
+            const patternsPath = BidYearIntegration.getPatternsPath();
+
+            console.log(`[YearTimeline] Loading patterns from Firebase: ${patternsPath}`);
+
+            try {
+                const response = await fetch(`${firebaseUrl}${patternsPath}`);
+                if (response.ok) {
+                    const firebaseData = await response.json();
+
+                    if (firebaseData && firebaseData.data && firebaseData.data.length > 0) {
+                        window.ANNUAL_BID = firebaseData.data;
+                        window.PATTERN_METADATA = firebaseData.metadata || {};
+                        window.PATTERN_METADATA.source = 'firebase';
+                        window.SEASONAL_DESKS = firebaseData.seasonalDesks || [];
+
+                        console.log(`[YearTimeline] Loaded ${firebaseData.data.length} lines from Firebase`);
+                        return firebaseData.data;
+                    } else if (firebaseData && firebaseData.lines) {
+                        // Raw pattern data - transform it
+                        const annualBid = PatternLoader.transform(firebaseData);
+                        window.ANNUAL_BID = annualBid;
+                        window.PATTERN_METADATA = {
+                            bidYear: firebaseData.bidYear,
+                            source: 'firebase'
+                        };
+                        window.SEASONAL_DESKS = firebaseData.seasonalDesks || [];
+
+                        console.log(`[YearTimeline] Transformed ${annualBid.length} lines from Firebase`);
+                        return annualBid;
+                    }
+                }
+                throw new Error('No pattern data found in Firebase for this bid year');
+            } catch (err) {
+                console.error('[YearTimeline] Firebase load failed:', err);
+                throw err;
+            }
+        }
+
+        // Initialize
+        async function init() {
+            try {
+                // Check for bidYear URL parameter - if present, enable admin mode
+                const urlParams = new URLSearchParams(window.location.search);
+                const hasBidYearParam = urlParams.has('bidYear');
+
+                // Initialize BID_CONFIG with admin mode if bidYear param present
+                BID_CONFIG.init(hasBidYearParam);
+
+                // Load color settings to match main app
+                await loadColorSettings();
+                await loadCustomGroups();
+                console.log('[YearTimeline] Color settings loaded');
+
+                // Generate holidays for the selected bid year
+                const bidYear = BID_CONFIG.getBidYear();
+                HOLIDAYS = generateHolidaysForYear(bidYear);
+                console.log(`[YearTimeline] Generated holidays for bid year ${bidYear}:`, Object.keys(HOLIDAYS).length);
+
+                // Load favorites
+                favorites = loadFavorites();
+
+                // Determine if we should skip local file and go straight to Firebase
+                const selectedYear = BID_CONFIG.getBidYear();
+                const isNonDefaultYear = selectedYear !== BID_CONFIG.DEFAULT_BID_YEAR;
+
+                // Load patterns - skip local file for non-default years
+                if (typeof PatternLoader !== 'undefined') {
+                    if (isNonDefaultYear) {
+                        // For non-default years, load directly from Firebase
+                        await loadPatternsFromFirebase();
+                    } else {
+                        // For default year, try local file first
+                        await PatternLoader.load('patterns.json');
+                    }
+                }
+
+                // Initialize calendar
+                if (typeof initializeCalendar === 'function') {
+                    calendar = initializeCalendar();
+                } else if (typeof ALL_LINES_CALENDAR !== 'undefined') {
+                    calendar = ALL_LINES_CALENDAR;
+                }
+
+                if (!calendar || Object.keys(calendar).length === 0) {
+                    document.getElementById('timelineContainer').innerHTML =
+                        '<div class="loading">Error: Could not load calendar data</div>';
+                    return;
+                }
+
+                // Generate UI
+                generateMonthNav();
+                generateTimeline();
+
+                // Update title with bid year
+                document.querySelector('h1').textContent = `Year Timeline - ${BID_CONFIG.getDisplayTitle()}`;
+                document.title = `Year Timeline - ${BID_CONFIG.getDisplayTitle()}`;
+
+            } catch (err) {
+                console.error('Init error:', err);
+                document.getElementById('timelineContainer').innerHTML =
+                    `<div class="loading">Error: ${err.message}</div>`;
+            }
+        }
+
+        // Start when DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bid Times</title>
+    <script src="BID_CONFIG.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .info-banner {
+            background: #f7fafc;
+            padding: 20px;
+            border-bottom: 2px solid #e2e8f0;
+            text-align: center;
+            color: #4a5568;
+            font-size: 1.1em;
+        }
+
+        .info-banner strong {
+            color: #2d3748;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .section-header {
+            background: #667eea;
+            color: white;
+            padding: 15px 20px;
+            font-size: 1.3em;
+            font-weight: 700;
+            border-radius: 8px 8px 0 0;
+            margin-top: 30px;
+        }
+
+        .section-header:first-child {
+            margin-top: 0;
+        }
+
+        .table-container {
+            background: white;
+            border: 2px solid #667eea;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+
+        .bid-table-header {
+            display: grid;
+            grid-template-columns: 80px 1fr 180px;
+            gap: 20px;
+            padding: 15px 20px;
+            background: #edf2f7;
+            font-weight: 700;
+            color: #2d3748;
+            border-bottom: 2px solid #cbd5e0;
+        }
+
+        .bid-table-row {
+            display: grid;
+            grid-template-columns: 80px 1fr 180px;
+            gap: 20px;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background 0.2s;
+        }
+
+        .bid-table-row:hover {
+            background: #f7fafc;
+        }
+
+        .bid-table-row:last-child {
+            border-bottom: none;
+        }
+
+        .nbr {
+            text-align: center;
+            color: #667eea;
+            font-weight: 700;
+            font-size: 1.1em;
+        }
+
+        .name {
+            font-weight: 600;
+            color: #2d3748;
+            font-family: 'Courier New', monospace;
+        }
+
+        .bid-time {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            color: #c53030;
+            text-align: center;
+            font-size: 1.05em;
+        }
+
+        @media (max-width: 768px) {
+            .bid-table-header,
+            .bid-table-row {
+                grid-template-columns: 60px 1fr 140px;
+                gap: 15px;
+                padding: 12px 15px;
+                font-size: 0.9em;
+            }
+
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .section-header {
+                font-size: 1.1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⏰ Bid Times - 2026-2027</h1>
+            <p>Seniority Order | Bidding Schedule | April 1, 2026 - March 31, 2027</p>
+        </div>
+
+        <div class="info-banner">
+            <strong>Bidding starts:</strong> January 6, 2026 at 05:00 | <strong>Interval:</strong> 10 minutes per person | <strong>Total:</strong> 95 people
+        </div>
+
+        <div class="content">
+            <!-- SSOM Lines -->
+            <div class="section-header">
+                👔 SSOM Lines (Senior System Operations Manager) - 14 Lines
+            </div>
+            <div class="table-container">
+                <div class="bid-table-header">
+                    <div>NBR</div>
+                    <div>Name</div>
+                    <div>Bid Time</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">1</div>
+                    <div class="name">COST, BOB</div>
+                    <div class="bid-time">05:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">2</div>
+                    <div class="name">BRET, KEN</div>
+                    <div class="bid-time">05:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">3</div>
+                    <div class="name">ASTL, JOE</div>
+                    <div class="bid-time">05:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">4</div>
+                    <div class="name">PAWL, CHR</div>
+                    <div class="bid-time">05:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">5</div>
+                    <div class="name">BELF, VIN</div>
+                    <div class="bid-time">05:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">6</div>
+                    <div class="name">JOHN, BRI</div>
+                    <div class="bid-time">05:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">7</div>
+                    <div class="name">SMIT, DAV</div>
+                    <div class="bid-time">06:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">8</div>
+                    <div class="name">CAMP, KEV</div>
+                    <div class="bid-time">06:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">9</div>
+                    <div class="name">RECK, JAS</div>
+                    <div class="bid-time">06:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">10</div>
+                    <div class="name">DONA, JEF</div>
+                    <div class="bid-time">06:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">11</div>
+                    <div class="name">ADAM, MAR</div>
+                    <div class="bid-time">06:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">12</div>
+                    <div class="name">SCHA, DAV</div>
+                    <div class="bid-time">06:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">13</div>
+                    <div class="name">EMER, JES</div>
+                    <div class="bid-time">07:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">14</div>
+                    <div class="name">GRAF, BEN</div>
+                    <div class="bid-time">07:10 06Jan26</div>
+                </div>
+            </div>
+
+            <!-- SOM Lines -->
+            <div class="section-header">
+                👤 SOM Lines (System Operations Manager) - 81 Lines
+            </div>
+            <div class="table-container">
+                <div class="bid-table-header">
+                    <div>NBR</div>
+                    <div>Name</div>
+                    <div>Bid Time</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">1</div>
+                    <div class="name">BIRD, DAN</div>
+                    <div class="bid-time">05:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">2</div>
+                    <div class="name">FRAN, DAV</div>
+                    <div class="bid-time">05:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">3</div>
+                    <div class="name">CHAR, CAR</div>
+                    <div class="bid-time">05:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">4</div>
+                    <div class="name">SPRA, PER</div>
+                    <div class="bid-time">05:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">5</div>
+                    <div class="name">OLSE, ED</div>
+                    <div class="bid-time">05:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">6</div>
+                    <div class="name">HARR, JIM</div>
+                    <div class="bid-time">05:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">7</div>
+                    <div class="name">BAIL, RIC</div>
+                    <div class="bid-time">06:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">8</div>
+                    <div class="name">CLAR, JUD</div>
+                    <div class="bid-time">06:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">9</div>
+                    <div class="name">GWIN, BRI</div>
+                    <div class="bid-time">06:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">10</div>
+                    <div class="name">DANI, JEF</div>
+                    <div class="bid-time">06:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">11</div>
+                    <div class="name">SMIT, BAR</div>
+                    <div class="bid-time">06:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">12</div>
+                    <div class="name">RIEL, WAL</div>
+                    <div class="bid-time">06:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">13</div>
+                    <div class="name">ROHL, MIK</div>
+                    <div class="bid-time">07:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">14</div>
+                    <div class="name">HOUC, DAV</div>
+                    <div class="bid-time">07:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">15</div>
+                    <div class="name">STAN, LAN</div>
+                    <div class="bid-time">07:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">16</div>
+                    <div class="name">HOBS, MAR</div>
+                    <div class="bid-time">07:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">17</div>
+                    <div class="name">HOFF, DAN</div>
+                    <div class="bid-time">07:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">18</div>
+                    <div class="name">BAKE, ERI</div>
+                    <div class="bid-time">07:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">19</div>
+                    <div class="name">PUSZ, JIM</div>
+                    <div class="bid-time">08:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">20</div>
+                    <div class="name">HARA, DUD</div>
+                    <div class="bid-time">08:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">21</div>
+                    <div class="name">BATT, JAI</div>
+                    <div class="bid-time">08:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">22</div>
+                    <div class="name">SUCH, CHR</div>
+                    <div class="bid-time">08:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">23</div>
+                    <div class="name">(VACANT)</div>
+                    <div class="bid-time">08:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">24</div>
+                    <div class="name">HURL, JAC</div>
+                    <div class="bid-time">08:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">25</div>
+                    <div class="name">MCEL, KEV</div>
+                    <div class="bid-time">09:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">26</div>
+                    <div class="name">REED, MIK</div>
+                    <div class="bid-time">09:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">27</div>
+                    <div class="name">FUJI, ROX</div>
+                    <div class="bid-time">09:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">28</div>
+                    <div class="name">O'DO, BRI</div>
+                    <div class="bid-time">09:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">29</div>
+                    <div class="name">HAMI, ADA</div>
+                    <div class="bid-time">09:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">30</div>
+                    <div class="name">GEIG, GEO</div>
+                    <div class="bid-time">09:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">31</div>
+                    <div class="name">O'DO, WEN</div>
+                    <div class="bid-time">10:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">32</div>
+                    <div class="name">ESTE, KAT</div>
+                    <div class="bid-time">10:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">33</div>
+                    <div class="name">RINE, RAL</div>
+                    <div class="bid-time">10:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">34</div>
+                    <div class="name">ROMA, KEN</div>
+                    <div class="bid-time">10:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">35</div>
+                    <div class="name">HALL, CHA</div>
+                    <div class="bid-time">10:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">36</div>
+                    <div class="name">LONG, AND</div>
+                    <div class="bid-time">10:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">37</div>
+                    <div class="name">PAPP, ROB</div>
+                    <div class="bid-time">11:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">38</div>
+                    <div class="name">GAGN, JUL</div>
+                    <div class="bid-time">11:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">39</div>
+                    <div class="name">MALE, TOD</div>
+                    <div class="bid-time">11:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">40</div>
+                    <div class="name">MISN, HUO</div>
+                    <div class="bid-time">11:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">41</div>
+                    <div class="name">O'BR, DAV</div>
+                    <div class="bid-time">11:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">42</div>
+                    <div class="name">DELA, WIL</div>
+                    <div class="bid-time">11:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">43</div>
+                    <div class="name">BETC, MIC</div>
+                    <div class="bid-time">12:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">44</div>
+                    <div class="name">JOLL, DAV</div>
+                    <div class="bid-time">12:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">45</div>
+                    <div class="name">TOZZ, GIN</div>
+                    <div class="bid-time">12:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">46</div>
+                    <div class="name">MCMO, SHA</div>
+                    <div class="bid-time">12:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">47</div>
+                    <div class="name">RUCK, RIC</div>
+                    <div class="bid-time">12:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">48</div>
+                    <div class="name">WARN, DEE</div>
+                    <div class="bid-time">12:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">49</div>
+                    <div class="name">HENE, AND</div>
+                    <div class="bid-time">13:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">50</div>
+                    <div class="name">OSOJ, MER</div>
+                    <div class="bid-time">13:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">51</div>
+                    <div class="name">FOLE, RYA</div>
+                    <div class="bid-time">13:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">52</div>
+                    <div class="name">HILL, SEA</div>
+                    <div class="bid-time">13:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">53</div>
+                    <div class="name">MUGE, JEN</div>
+                    <div class="bid-time">13:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">54</div>
+                    <div class="name">DENM, JOH</div>
+                    <div class="bid-time">13:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">55</div>
+                    <div class="name">MAKI, RYA</div>
+                    <div class="bid-time">14:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">56</div>
+                    <div class="name">MCGR, DEA</div>
+                    <div class="bid-time">14:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">57</div>
+                    <div class="name">BRAD, LAT</div>
+                    <div class="bid-time">14:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">58</div>
+                    <div class="name">HATL, HER</div>
+                    <div class="bid-time">14:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">59</div>
+                    <div class="name">HAYE, JOH</div>
+                    <div class="bid-time">14:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">60</div>
+                    <div class="name">HARR, ELE</div>
+                    <div class="bid-time">14:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">61</div>
+                    <div class="name">PIOT, MAR</div>
+                    <div class="bid-time">15:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">62</div>
+                    <div class="name">CART, WES</div>
+                    <div class="bid-time">15:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">63</div>
+                    <div class="name">GAUL, PET</div>
+                    <div class="bid-time">15:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">64</div>
+                    <div class="name">BOST, GRE</div>
+                    <div class="bid-time">15:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">65</div>
+                    <div class="name">HINT, SEL</div>
+                    <div class="bid-time">15:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">66</div>
+                    <div class="name">TJAD, AND</div>
+                    <div class="bid-time">15:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">67</div>
+                    <div class="name">GEUR, STE</div>
+                    <div class="bid-time">16:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">68</div>
+                    <div class="name">KENT, AND</div>
+                    <div class="bid-time">16:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">69</div>
+                    <div class="name">SAMU, CHA</div>
+                    <div class="bid-time">16:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">70</div>
+                    <div class="name">CORN, DAN</div>
+                    <div class="bid-time">16:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">71</div>
+                    <div class="name">FATT, KEL</div>
+                    <div class="bid-time">16:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">72</div>
+                    <div class="name">STAR, JIM</div>
+                    <div class="bid-time">16:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">73</div>
+                    <div class="name">ALLE, JOS</div>
+                    <div class="bid-time">17:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">74</div>
+                    <div class="name">LATT, WIL</div>
+                    <div class="bid-time">17:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">75</div>
+                    <div class="name">TURI, LAU</div>
+                    <div class="bid-time">17:20 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">76</div>
+                    <div class="name">AUST, STE</div>
+                    <div class="bid-time">17:30 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">77</div>
+                    <div class="name">RAIN, MIK</div>
+                    <div class="bid-time">17:40 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">78</div>
+                    <div class="name">MILL, CRA</div>
+                    <div class="bid-time">17:50 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">79</div>
+                    <div class="name">LITT, CLA</div>
+                    <div class="bid-time">18:00 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">80</div>
+                    <div class="name">PIER, MAR</div>
+                    <div class="bid-time">18:10 06Jan26</div>
+                </div>
+                <div class="bid-table-row">
+                    <div class="nbr">81</div>
+                    <div class="name">HARN, ZAC</div>
+                    <div class="bid-time">18:20 06Jan26</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Personnel data for bid schedule
+        var SSOM_PERSONNEL = [
+            'COST, BOB', 'BRET, KEN', 'ASTL, JOE', 'PAWL, CHR', 'BELF, VIN',
+            'JOHN, BRI', 'SMIT, DAV', 'CAMP, KEV', 'RECK, JAS', 'DONA, JEF',
+            'ADAM, MAR', 'SCHA, DAV', 'EMER, JES', 'GRAF, BEN'
+        ];
+
+        var SOM_PERSONNEL = [
+            'BIRD, DAN', 'FRAN, DAV', 'CHAR, CAR', 'SPRA, PER', 'OLSE, ED',
+            'HARR, JIM', 'BAIL, RIC', 'CLAR, JUD', 'GWIN, BRI', 'DANI, JEF',
+            'SMIT, BAR', 'RIEL, WAL', 'ROHL, MIK', 'HOUC, DAV', 'STAN, LAN',
+            'HOBS, MAR', 'HOFF, DAN', 'BAKE, ERI', 'PUSZ, JIM', 'HARA, DUD',
+            'BATT, JAI', 'SUCH, CHR', '(VACANT)', 'HURL, JAC', 'MCEL, KEV',
+            'REED, MIK', 'FUJI, ROX', 'O\'DO, BRI', 'HAMI, ADA', 'GEIG, GEO',
+            'O\'DO, WEN', 'ESTE, KAT', 'RINE, RAL', 'ROMA, KEN', 'HALL, CHA',
+            'LONG, AND', 'PAPP, ROB', 'GAGN, JUL', 'MALE, TOD', 'MISN, HUO',
+            'O\'BR, DAV', 'DELA, WIL', 'BETC, MIC', 'JOLL, DAV', 'TOZZ, GIN',
+            'MCMO, SHA', 'RUCK, RIC', 'WARN, DEE', 'HENE, AND', 'OSOJ, MER',
+            'FOLE, RYA', 'HILL, SEA', 'MUGE, JEN', 'DENM, JOH', 'MAKI, RYA',
+            'MCGR, DEA', 'BRAD, LAT', 'HATL, HER', 'HAYE, JOH', 'HARR, ELE',
+            'PIOT, MAR', 'CART, WES', 'GAUL, PET', 'BOST, GRE', 'HINT, SEL',
+            'TJAD, AND', 'GEUR, STE', 'KENT, AND', 'SAMU, CHA', 'CORN, DAN',
+            'FATT, KEL', 'STAR, JIM', 'ALLE, JOS', 'LATT, WIL', 'TURI, LAU',
+            'AUST, STE', 'RAIN, MIK', 'MILL, CRA', 'LITT, CLA', 'PIER, MAR',
+            'HARN, ZAC'
+        ];
+
+        function getBidStartDate() {
+            var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
+            // Bidding starts January 6 of the bid year at 05:00
+            // You can adjust this offset as needed
+            return new Date(bidYear, 0, 6, 5, 0, 0);
+        }
+
+        function formatBidTime(date) {
+            var hours = date.getHours().toString().padStart(2, '0');
+            var minutes = date.getMinutes().toString().padStart(2, '0');
+            var day = date.getDate().toString().padStart(2, '0');
+            var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var month = monthNames[date.getMonth()];
+            var year = (date.getFullYear() % 100).toString().padStart(2, '0');
+            return hours + ':' + minutes + ' ' + day + month + year;
+        }
+
+        function formatLongDate(date) {
+            var monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            return monthNames[date.getMonth()] + ' ' + date.getDate() + ', ' + date.getFullYear();
+        }
+
+        function generateBidRows(container, personnel, startTime) {
+            // Clear existing rows (keep header)
+            var header = container.querySelector('.bid-table-header');
+            container.innerHTML = '';
+            container.appendChild(header);
+
+            var currentTime = new Date(startTime.getTime());
+
+            personnel.forEach(function(name, index) {
+                var row = document.createElement('div');
+                row.className = 'bid-table-row';
+                row.innerHTML =
+                    '<div class="nbr">' + (index + 1) + '</div>' +
+                    '<div class="name">' + name + '</div>' +
+                    '<div class="bid-time">' + formatBidTime(currentTime) + '</div>';
+                container.appendChild(row);
+
+                // Add 10 minutes for next person
+                currentTime = new Date(currentTime.getTime() + 10 * 60 * 1000);
+            });
+
+            return currentTime;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
+            var bidStartDate = getBidStartDate();
+
+            // Update page title
+            document.title = bidYear + '-' + (bidYear + 1) + ' Bid Times';
+
+            // Update header
+            var headerH1 = document.querySelector('.header h1');
+            if (headerH1) {
+                headerH1.textContent = '⏰ Bid Times - ' + bidYear + '-' + (bidYear + 1);
+            }
+
+            var headerP = document.querySelector('.header p');
+            if (headerP) {
+                headerP.textContent = 'Seniority Order | Bidding Schedule | April 1, ' + bidYear + ' - March 31, ' + (bidYear + 1);
+            }
+
+            // Update info banner
+            var infoBanner = document.querySelector('.info-banner');
+            if (infoBanner) {
+                var totalPeople = SSOM_PERSONNEL.length + SOM_PERSONNEL.length;
+                infoBanner.innerHTML = '<strong>Bidding starts:</strong> ' + formatLongDate(bidStartDate) +
+                    ' at 05:00 | <strong>Interval:</strong> 10 minutes per person | <strong>Total:</strong> ' +
+                    totalPeople + ' people';
+            }
+
+            // Update SSOM section header
+            var sectionHeaders = document.querySelectorAll('.section-header');
+            if (sectionHeaders[0]) {
+                sectionHeaders[0].textContent = '👔 SSOM Lines (Senior System Operations Manager) - ' + SSOM_PERSONNEL.length + ' Lines';
+            }
+            if (sectionHeaders[1]) {
+                sectionHeaders[1].textContent = '👤 SOM Lines (System Operations Manager) - ' + SOM_PERSONNEL.length + ' Lines';
+            }
+
+            // Generate SSOM bid times
+            var ssomContainer = document.querySelectorAll('.table-container')[0];
+            var somStartTime = generateBidRows(ssomContainer, SSOM_PERSONNEL, bidStartDate);
+
+            // Generate SOM bid times (SOM starts fresh at 05:00 same day)
+            var somContainer = document.querySelectorAll('.table-container')[1];
+            generateBidRows(somContainer, SOM_PERSONNEL, bidStartDate);
+        });
+    </script>
+</body>
+</html>

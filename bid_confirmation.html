@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bid Confirmation - Polish Bid 2026-2027</title>
+    <link rel="stylesheet" href="bidding.css">
+    <style>
+        .confirmation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .confirmation-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #16213e;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .confirmation-table th {
+            background: #0f3460;
+            color: #4ecca3;
+            padding: 12px 10px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .confirmation-table td {
+            padding: 10px;
+            border-bottom: 1px solid #0f3460;
+            font-size: 12px;
+        }
+        .confirmation-table tr:hover {
+            background: #1a1a2e;
+        }
+        .confirmation-table tr.confirmed {
+            background: rgba(78, 204, 163, 0.15);
+        }
+        .sen-num {
+            color: #888;
+            font-weight: bold;
+            text-align: center;
+            width: 40px;
+        }
+        .sen-name {
+            color: #eee;
+        }
+        .line-num {
+            color: #4ecca3;
+            font-weight: bold;
+            text-align: center;
+            width: 60px;
+        }
+        .line-num.empty {
+            color: #555;
+        }
+        .confirm-status {
+            text-align: center;
+            width: 100px;
+        }
+        .confirm-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #4ecca3;
+        }
+        .confirm-checkbox:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .confirmed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(78, 204, 163, 0.2);
+            color: #4ecca3;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .pending-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(136, 136, 136, 0.2);
+            color: #888;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        .pattern-cell {
+            padding: 5px;
+        }
+        .pattern-row {
+            display: flex;
+            gap: 2px;
+        }
+        .pattern-day {
+            display: inline-block;
+            width: 32px;
+            height: 22px;
+            line-height: 22px;
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            border-radius: 3px;
+        }
+        .group-header {
+            background: #0f3460 !important;
+        }
+        .group-header td {
+            color: #e94560;
+            font-weight: bold;
+            font-size: 14px;
+            padding: 15px 10px 10px 10px;
+            border-bottom: 2px solid #e94560;
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #4ecca3;
+            text-decoration: none;
+            font-size: 14px;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+        .stats-bar {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #16213e;
+            border-radius: 8px;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .stat-label {
+            color: #888;
+            font-size: 12px;
+        }
+        .stat-value {
+            color: #4ecca3;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .stat-value.pending {
+            color: #e94560;
+        }
+        .print-btn {
+            background: #9b59b6;
+            color: white;
+        }
+        @media print {
+            body { background: white; color: black; }
+            .header, .footer, .status-bar, .back-link, .btn { display: none !important; }
+            .confirmation-container { max-width: 100%; padding: 10px; }
+            .confirmation-table { background: white; }
+            .confirmation-table th { background: #eee; color: black; }
+            .confirmation-table td { border-bottom: 1px solid #ccc; color: black; }
+            .confirmation-table tr.confirmed { background: #e8f5e9; }
+            .confirmed-badge { background: #c8e6c9; color: #2e7d32; }
+            .pending-badge { background: #eee; color: #666; }
+            .stats-bar { background: #f5f5f5; }
+            .stat-value { color: black; }
+            .confirm-checkbox { display: none; }
+            .pattern-day { 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important;
+                width: 28px;
+                height: 18px;
+                line-height: 18px;
+                font-size: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>Bid Confirmation Status</h1>
+            <p>Polish Bid 2026-2027 | Track confirmed line assignments</p>
+        </div>
+    </div>
+
+    <div class="status-bar">
+        <div class="stats">
+            <span class="mode-indicator viewer" id="modeIndicator">VIEWER</span>
+        </div>
+        <div class="sync-status">
+            <div class="sync-dot" id="syncDot"></div>
+            <span id="syncText">Connecting...</span>
+            <button class="btn" onclick="loadData()" style="padding:4px 12px; font-size:11px; margin-left:8px; background:#4ecca3; color:#1a1a2e; font-weight:bold;">⟳ Refresh</button>
+        </div>
+    </div>
+
+    <div class="confirmation-container">
+        <a href="index.html" class="back-link">← Back to Main Bid Page</a>
+        
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">Total Assigned:</span>
+                <span class="stat-value" id="totalAssigned">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Confirmed:</span>
+                <span class="stat-value" id="totalConfirmed">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Pending:</span>
+                <span class="stat-value pending" id="totalPending">0</span>
+            </div>
+            <button class="btn print-btn" onclick="window.print()" style="margin-left:auto;">🖨️ Print</button>
+        </div>
+
+        <table class="confirmation-table">
+            <thead>
+                <tr>
+                    <th style="width:40px;">#</th>
+                    <th>Name</th>
+                    <th style="width:60px; text-align:center;">Line</th>
+                    <th style="text-align:center;">Pattern (1-12)</th>
+                    <th style="width:120px; text-align:center;">Status</th>
+                    <th style="width:80px; text-align:center;" id="confirmHeader">Confirm</th>
+                </tr>
+            </thead>
+            <tbody id="confirmationList">
+                <!-- Populated by JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="footer">
+        <div></div>
+        <div>
+            <button class="btn btn-admin" onclick="showPasswordModal()" id="adminBtn">Admin Login</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="passwordModal">
+        <div class="password-modal">
+            <h3>🔐 Admin Login</h3>
+            <p style="color:#888; font-size:12px; margin-bottom:15px;">Enter password to enable confirmation editing</p>
+            <input type="password" id="passwordInput" placeholder="Password" onkeydown="if(event.key==='Enter')checkPassword()">
+            <div class="password-error" id="passwordError">Incorrect password</div>
+            <button class="btn btn-primary" onclick="checkPassword()" style="width:100%; padding:12px;">Login</button>
+            <button class="btn btn-secondary" onclick="hidePasswordModal()" style="width:100%; padding:12px; margin-top:10px;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <script src="BID_CONFIG.js"></script>
+
+    <script>
+        // Update page title/header dynamically
+        document.addEventListener('DOMContentLoaded', function() {
+            var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
+            document.title = 'Bid Confirmation - Polish Bid ' + bidYear + '-' + (bidYear + 1);
+            var headerP = document.querySelector('.header-content p');
+            if (headerP) {
+                headerP.textContent = 'Polish Bid ' + bidYear + '-' + (bidYear + 1) + ' | Track confirmed line assignments';
+            }
+        });
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDD7V8bTZK8q7ADvR7rx56n9UDZs5O7PjU",
+            authDomain: "bid2026-58308.firebaseapp.com",
+            databaseURL: "https://bid2026-58308-default-rtdb.firebaseio.com",
+            projectId: "bid2026-58308",
+            storageBucket: "bid2026-58308.firebasestorage.app",
+            messagingSenderId: "312871238158",
+            appId: "1:312871238158:web:b880eea86e983d1dac9a5f"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // Seniority data - loaded from Firebase with fallback
+        let GROUP1 = [];
+        let GROUP2 = [];
+        
+        // FALLBACK: Exact copy of current seniority
+        const GROUP1_FALLBACK = [{"nbr": 1, "name": "COST, BOB"}, {"nbr": 2, "name": "BRET, KEN"}, {"nbr": 3, "name": "ASTL, JOE"}, {"nbr": 4, "name": "PAWL, CHR"}, {"nbr": 5, "name": "BELF, VIN"}, {"nbr": 6, "name": "JOHN, BRI"}, {"nbr": 7, "name": "SMIT, DAV"}, {"nbr": 8, "name": "CAMP, KEV"}, {"nbr": 9, "name": "RECK, JAS"}, {"nbr": 10, "name": "DONA, JEF"}, {"nbr": 11, "name": "ADAM, MAR"}, {"nbr": 12, "name": "SCHA, DAV"}, {"nbr": 13, "name": "EMER, JES"}, {"nbr": 14, "name": "GRAF, BEN"}];
+        const GROUP2_FALLBACK = [{"nbr": 1, "name": "BIRD, DAN"}, {"nbr": 2, "name": "FRAN, DAV"}, {"nbr": 3, "name": "CHAR, CAR"}, {"nbr": 4, "name": "SPRA, PER"}, {"nbr": 5, "name": "OLSE, ED"}, {"nbr": 6, "name": "HARR, JIM"}, {"nbr": 7, "name": "BAIL, RIC"}, {"nbr": 8, "name": "CLAR, JUD"}, {"nbr": 9, "name": "GWIN, BRI"}, {"nbr": 10, "name": "DANI, JEF"}, {"nbr": 11, "name": "SMIT, BAR"}, {"nbr": 12, "name": "RIEL, WAL"}, {"nbr": 13, "name": "ROHL, MIK"}, {"nbr": 14, "name": "HOUC, DAV"}, {"nbr": 15, "name": "STAN, LAN"}, {"nbr": 16, "name": "HOBS, MAR"}, {"nbr": 17, "name": "HOFF, DAN"}, {"nbr": 18, "name": "BAKE, ERI"}, {"nbr": 19, "name": "PUSZ, JIM"}, {"nbr": 20, "name": "HARA, DUD"}, {"nbr": 21, "name": "BATT, JAI"}, {"nbr": 22, "name": "SUCH, CHR"}, {"nbr": 23, "name": "(VACANT)"}, {"nbr": 24, "name": "HURL, JAC"}, {"nbr": 25, "name": "MCEL, KEV"}, {"nbr": 26, "name": "REED, MIK"}, {"nbr": 27, "name": "FUJI, ROX"}, {"nbr": 28, "name": "O'DO, BRI"}, {"nbr": 29, "name": "HAMI, ADA"}, {"nbr": 30, "name": "GEIG, GEO"}, {"nbr": 31, "name": "O'DO, WEN"}, {"nbr": 32, "name": "ESTE, KAT"}, {"nbr": 33, "name": "RINE, RAL"}, {"nbr": 34, "name": "ROMA, KEN"}, {"nbr": 35, "name": "HALL, CHA"}, {"nbr": 36, "name": "LONG, AND"}, {"nbr": 37, "name": "PAPP, ROB"}, {"nbr": 38, "name": "GAGN, JUL"}, {"nbr": 39, "name": "MALE, TOD"}, {"nbr": 40, "name": "MISN, HUO"}, {"nbr": 41, "name": "O'BR, DAV"}, {"nbr": 42, "name": "DELA, WIL"}, {"nbr": 43, "name": "BETC, MIC"}, {"nbr": 44, "name": "JOLL, DAV"}, {"nbr": 45, "name": "TOZZ, GIN"}, {"nbr": 46, "name": "MCMO, SHA"}, {"nbr": 47, "name": "RUCK, RIC"}, {"nbr": 48, "name": "WARN, DEE"}, {"nbr": 49, "name": "HENE, AND"}, {"nbr": 50, "name": "OSOJ, MER"}, {"nbr": 51, "name": "FOLE, RYA"}, {"nbr": 52, "name": "HILL, SEA"}, {"nbr": 53, "name": "MUGE, JEN"}, {"nbr": 54, "name": "DENM, JOH"}, {"nbr": 55, "name": "MAKI, RYA"}, {"nbr": 56, "name": "MCGR, DEA"}, {"nbr": 57, "name": "BRAD, LAT"}, {"nbr": 58, "name": "HATL, HER"}, {"nbr": 59, "name": "HAYE, JOH"}, {"nbr": 60, "name": "HARR, ELE"}, {"nbr": 61, "name": "PIOT, MAR"}, {"nbr": 62, "name": "CART, WES"}, {"nbr": 63, "name": "GAUL, PET"}, {"nbr": 64, "name": "BOST, GRE"}, {"nbr": 65, "name": "HINT, SEL"}, {"nbr": 66, "name": "TJAD, AND"}, {"nbr": 67, "name": "GEUR, STE"}, {"nbr": 68, "name": "KENT, AND"}, {"nbr": 69, "name": "SAMU, CHA"}, {"nbr": 70, "name": "CORN, DAN"}, {"nbr": 71, "name": "FATT, KEL"}, {"nbr": 72, "name": "STAR, JIM"}, {"nbr": 73, "name": "ALLE, JOS"}, {"nbr": 74, "name": "LATT, WIL"}, {"nbr": 75, "name": "TURI, LAU"}, {"nbr": 76, "name": "AUST, STE"}, {"nbr": 77, "name": "RAIN, MIK"}, {"nbr": 78, "name": "MILL, CRA"}, {"nbr": 79, "name": "LITT, CLA"}, {"nbr": 80, "name": "PIER, MAR"}, {"nbr": 81, "name": "HARN, ZAC"}];
+        
+        async function loadSeniorityLists() {
+            try {
+                const response = await fetch('https://bid2026-58308-default-rtdb.firebaseio.com/seniority.json');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.GROUP1 && data.GROUP1.length > 0) {
+                        GROUP1 = data.GROUP1;
+                        GROUP2 = data.GROUP2 || [];
+                        console.log(`Loaded seniority from Firebase: SSOM=${GROUP1.length}, SOM=${GROUP2.length}`);
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load seniority:', err);
+            }
+            GROUP1 = GROUP1_FALLBACK;
+            GROUP2 = GROUP2_FALLBACK;
+        }
+
+        const COLOR_MAP = {
+            1: '#FFC000',
+            2: '#00FFFF',
+            3: '#00B0F0',
+            4: '#FF0000',
+            5: '#FFCCFF',
+            6: '#C0C0C0',
+            7: '#FFFF00',
+            8: '#00FF00',
+            9: '#FF66FF',
+            99: '#7030A0',
+        };
+        const LIGHT_TEXT_CODES = [4];
+
+        const ANNUAL_BID = [{"lineNbr": "1", "lineDesc": "SSOM", "days": ["--", "--", "E05A", "E05A", "E05A", "--", "--", "--", "E05A", "E05A", "--", "--"], "dayCodes": [8, 8, 1, 1, 1, 8, 8, 8, 1, 1, 8, 8], "lineColorCode": 1}, {"lineNbr": "2", "lineDesc": "SSOM", "days": ["E05A", "E05A", "--", "--", "--", "E05A", "E05A", "E05A", "--", "--", "--", "--"], "dayCodes": [1, 1, 8, 8, 8, 1, 1, 1, 8, 8, 8, 8], "lineColorCode": 1}, {"lineNbr": "3", "lineDesc": "SSOM", "days": ["--", "--", "A06M", "A06M", "A06M", "--", "--", "--", "A06M", "A06M", "--", "--"], "dayCodes": [8, 8, 1, 1, 1, 8, 8, 8, 1, 1, 8, 8], "lineColorCode": 1}, {"lineNbr": "4", "lineDesc": "SSOM", "days": ["A06M", "A06M", "--", "--", "--", "A06M", "A06M", "A06M", "--", "--", "--", "--"], "dayCodes": [1, 1, 8, 8, 8, 1, 1, 1, 8, 8, 8, 8], "lineColorCode": 1}, {"lineNbr": "5", "lineDesc": "SSOM", "days": ["--", "A09Z", "A09Z", "--", "--", "--", "--", "A09Z", "A09Z", "A09Z", "--", "--"], "dayCodes": [8, 1, 1, 8, 8, 8, 8, 1, 1, 1, 8, 8], "lineColorCode": 1}, {"lineNbr": "6", "lineDesc": "SSOM", "days": ["A09Z", "--", "--", "--", "--", "A09Z", "A09Z", "--", "--", "--", "A09Z", "A09Z"], "dayCodes": [1, 8, 8, 8, 8, 1, 1, 8, 8, 8, 1, 1], "lineColorCode": 1}, {"lineNbr": "7", "lineDesc": "SSOM", "days": ["--", "--", "--", "P12B", "P12B", "--", "--", "--", "--", "P12B", "P12B", "P12B"], "dayCodes": [8, 8, 8, 1, 1, 8, 8, 8, 8, 1, 1, 1], "lineColorCode": 1}, {"lineNbr": "8", "lineDesc": "SSOM", "days": ["P12B", "P12B", "P12B", "--", "--", "--", "--", "P12B", "P12B", "--", "--", "--"], "dayCodes": [1, 1, 1, 8, 8, 8, 8, 1, 1, 8, 8, 8], "lineColorCode": 1}, {"lineNbr": "9", "lineDesc": "SSOM", "days": ["--", "--", "--", "--", "A09Z", "P12B", "P12B", "--", "--", "--", "E05A", "E05A"], "dayCodes": [8, 8, 8, 8, 1, 1, 1, 8, 8, 8, 1, 1], "lineColorCode": 99}, {"lineNbr": "10", "lineDesc": "SSOM", "days": ["--", "--", "--", "A09Z", "M18M", "M18M", "--", "--", "--", "--", "A06M", "A06M"], "dayCodes": [8, 8, 8, 1, 6, 6, 8, 8, 8, 8, 1, 1], "lineColorCode": 99}, {"lineNbr": "11", "lineDesc": "SSOM", "days": ["--", "--", "M18M", "M18M", "--", "--", "--", "--", "M18M", "M18M", "M18M", "--"], "dayCodes": [8, 8, 6, 6, 8, 8, 8, 8, 6, 6, 6, 8], "lineColorCode": 6}, {"lineNbr": "12", "lineDesc": "SSOM", "days": ["M18M", "M18M", "--", "--", "--", "--", "M18M", "M18M", "--", "--", "--", "M18M"], "dayCodes": [6, 6, 8, 8, 8, 8, 6, 6, 8, 8, 8, 6], "lineColorCode": 6}, {"lineNbr": "13", "lineDesc": "SSOM", "days": ["--", "--", "XXX", "XXX", "--", "--", "--", "XXX", "XXX", "XXX", "--", "--"], "dayCodes": [8, 8, 7, 7, 8, 8, 8, 7, 7, 7, 8, 8], "lineColorCode": 7}, {"lineNbr": "14", "lineDesc": "SSOM", "days": ["--", "--", "--", "--", "XXX", "XXX", "XXX", "--", "--", "--", "XXX", "XXX"], "dayCodes": [8, 8, 8, 8, 7, 7, 7, 8, 8, 8, 7, 7], "lineColorCode": 7}, {"lineNbr": "15", "lineDesc": "SOM", "days": ["A06C", "--", "--", "--", "--", "A06C", "A06C", "A06C", "--", "--", "--", "A06C"], "dayCodes": [2, 8, 8, 8, 8, 2, 2, 2, 8, 8, 8, 2], "lineColorCode": 2}, {"lineNbr": "16", "lineDesc": "SOM", "days": ["--", "--", "--", "A06C", "A06C", "--", "--", "--", "A06C", "A06C", "A06C", "--"], "dayCodes": [8, 8, 8, 2, 2, 8, 8, 8, 2, 2, 2, 8], "lineColorCode": 2}, {"lineNbr": "17", "lineDesc": "SOM", "days": ["--", "--", "A06F", "A06F", "A06F", "--", "--", "--", "--", "A06F", "A06F", "--"], "dayCodes": [8, 8, 3, 3, 3, 8, 8, 8, 8, 3, 3, 8], "lineColorCode": 3}, {"lineNbr": "18", "lineDesc": "SOM", "days": ["A06F", "A06F", "--", "--", "--", "A06F", "A06F", "--", "--", "--", "--", "A06F"], "dayCodes": [3, 3, 8, 8, 8, 3, 3, 8, 8, 8, 8, 3], "lineColorCode": 3}, {"lineNbr": "19", "lineDesc": "SOM", "days": ["A06J", "--", "--", "--", "A06J", "A06J", "--", "--", "--", "--", "A06J", "A06J"], "dayCodes": [4, 8, 8, 8, 4, 4, 8, 8, 8, 8, 4, 4], "lineColorCode": 4}, {"lineNbr": "20", "lineDesc": "SOM", "days": ["--", "A06J", "A06J", "A06J", "--", "--", "--", "--", "A06J", "A06J", "--", "--"], "dayCodes": [8, 4, 4, 4, 8, 8, 8, 8, 4, 4, 8, 8], "lineColorCode": 4}, {"lineNbr": "21", "lineDesc": "SOM", "days": ["A09D", "--", "--", "--", "A09D", "A09D", "--", "--", "--", "--", "A09D", "A09D"], "dayCodes": [2, 8, 8, 8, 2, 2, 8, 8, 8, 8, 2, 2], "lineColorCode": 2}, {"lineNbr": "22", "lineDesc": "SOM", "days": ["--", "A09D", "A09D", "A09D", "--", "--", "--", "--", "A09D", "A09D", "--", "--"], "dayCodes": [8, 2, 2, 2, 8, 8, 8, 8, 2, 2, 8, 8], "lineColorCode": 2}, {"lineNbr": "23", "lineDesc": "SOM", "days": ["--", "--", "P12H", "P12H", "--", "--", "--", "P12H", "P12H", "P12H", "--", "--"], "dayCodes": [8, 8, 3, 3, 8, 8, 8, 3, 3, 3, 8, 8], "lineColorCode": 3}, {"lineNbr": "24", "lineDesc": "SOM", "days": ["--", "--", "--", "--", "P12H", "P12H", "P12H", "--", "--", "--", "P12H", "P12H"], "dayCodes": [8, 8, 8, 8, 3, 3, 3, 8, 8, 8, 3, 3], "lineColorCode": 3}, {"lineNbr": "25", "lineDesc": "SOM", "days": ["P12G", "P12G", "P12G", "--", "--", "--", "P12G", "P12G", "--", "--", "--", "--"], "dayCodes": [3, 3, 3, 8, 8, 8, 3, 3, 8, 8, 8, 8], "lineColorCode": 3}, {"lineNbr": "26", "lineDesc": "SOM", "days": ["--", "--", "--", "P12G", "P12G", "P12G", "--", "--", "--", "--", "P12G", "P12G"], "dayCodes": [8, 8, 8, 3, 3, 3, 8, 8, 8, 8, 3, 3], "lineColorCode": 3}, {"lineNbr": "27", "lineDesc": "SOM", "days": ["P12K", "P12K", "--", "--", "--", "--", "P12K", "P12K", "P12K", "--", "--", "--"], "dayCodes": [4, 4, 8, 8, 8, 8, 4, 4, 4, 8, 8, 8], "lineColorCode": 4}, {"lineNbr": "28", "lineDesc": "SOM", "days": ["--", "--", "--", "--", "P12K", "P12K", "--", "--", "--", "P12K", "P12K", "P12K"], "dayCodes": [8, 8, 8, 8, 4, 4, 8, 8, 8, 4, 4, 4], "lineColorCode": 4}, {"lineNbr": "29", "lineDesc": "SOM", "days": ["--", "--", "P12E", "P12E", "P12E", "--", "--", "--", "P12E", "P12E", "--", "--"], "dayCodes": [8, 8, 2, 2, 2, 8, 8, 8, 2, 2, 8, 8], "lineColorCode": 2}, {"lineNbr": "30", "lineDesc": "SOM", "days": ["P12E", "P12E", "--", "--", "--", "P12E", "P12E", "P12E", "--", "--", "--", "--"], "dayCodes": [2, 2, 8, 8, 8, 2, 2, 2, 8, 8, 8, 8], "lineColorCode": 2}, {"lineNbr": "31", "lineDesc": "SOM", "days": ["P12H", "P12H", "--", "--", "--", "--", "A09D", "A09D", "--", "--", "--", "P12E"], "dayCodes": [3, 3, 8, 8, 8, 8, 2, 2, 8, 8, 8, 2], "lineColorCode": 99}, {"lineNbr": "32", "lineDesc": "SOM", "days": ["--", "--", "P12K", "P12K", "--", "--", "--", "--", "P12G", "P12G", "P12E", "--"], "dayCodes": [8, 8, 4, 4, 8, 8, 8, 8, 3, 3, 2, 8], "lineColorCode": 99}, {"lineNbr": "33", "lineDesc": "SOM", "days": ["--", "A06C", "A06C", "--", "--", "--", "A06J", "A06F", "A06F", "--", "--", "--"], "dayCodes": [8, 2, 2, 8, 8, 8, 4, 3, 3, 8, 8, 8], "lineColorCode": 99}, {"lineNbr": "34", "lineDesc": "SOM", "days": ["--", "A10O", "A10O", "--", "--", "--", "--", "A10O", "A10O", "A10O", "--", "--"], "dayCodes": [8, 9, 9, 8, 8, 8, 8, 9, 9, 9, 8, 8], "lineColorCode": 9}, {"lineNbr": "35", "lineDesc": "SOM", "days": ["A10O", "--", "--", "--", "--", "A10O", "A10O", "--", "--", "--", "A10O", "A10O"], "dayCodes": [9, 8, 8, 8, 8, 9, 9, 8, 8, 8, 9, 9], "lineColorCode": 9}, {"lineNbr": "36", "lineDesc": "SOM", "days": ["A06N", "A06N", "A06N", "--", "--", "--", "A06N", "A06N", "--", "--", "--", "--"], "dayCodes": [5, 5, 5, 8, 8, 8, 5, 5, 8, 8, 8, 8], "lineColorCode": 5}, {"lineNbr": "37", "lineDesc": "SOM", "days": ["--", "--", "--", "A06N", "A06N", "A06N", "--", "--", "--", "--", "A06N", "A06N"], "dayCodes": [8, 8, 8, 5, 5, 5, 8, 8, 8, 8, 5, 5], "lineColorCode": 5}, {"lineNbr": "38", "lineDesc": "SOM", "days": ["A06Q", "A06Q", "--", "--", "--", "--", "A06Q", "A06Q", "A06Q", "--", "--", "--"], "dayCodes": [5, 5, 8, 8, 8, 8, 5, 5, 5, 8, 8, 8], "lineColorCode": 5}, {"lineNbr": "39", "lineDesc": "SOM", "days": ["--", "--", "--", "--", "A06Q", "A06Q", "--", "--", "--", "A06Q", "A06Q", "A06Q"], "dayCodes": [8, 8, 8, 8, 5, 5, 8, 8, 8, 5, 5, 5], "lineColorCode": 5}, {"lineNbr": "40", "lineDesc": "SOM", "days": ["A06R", "--", "--", "--", "--", "A06R", "A06R", "A06R", "--", "--", "--", "A06R"], "dayCodes": [5, 8, 8, 8, 8, 5, 5, 5, 8, 8, 8, 5], "lineColorCode": 5}, {"lineNbr": "41", "lineDesc": "SOM", "days": ["--", "--", "--", "A06R", "A06R", "--", "--", "--", "A06R", "A06R", "A06R", "--"], "dayCodes": [8, 8, 8, 5, 5, 8, 8, 8, 5, 5, 5, 8], "lineColorCode": 5}, {"lineNbr": "42", "lineDesc": "SOM", "days": ["A06S", "A06S", "--", "--", "--", "A06S", "A06S", "--", "--", "--", "--", "A06S"], "dayCodes": [5, 5, 8, 8, 8, 5, 5, 8, 8, 8, 8, 5], "lineColorCode": 5}, {"lineNbr": "43", "lineDesc": "SOM", "days": ["--", "--", "A06S", "A06S", "A06S", "--", "--", "--", "--", "A06S", "A06S", "--"], "dayCodes": [8, 8, 5, 5, 5, 8, 8, 8, 8, 5, 5, 8], "lineColorCode": 5}, {"lineNbr": "44", "lineDesc": "SOM", "days": ["--", "A06U", "A06U", "--", "--", "--", "--", "A06U", "A06U", "A06U", "--", "--"], "dayCodes": [8, 5, 5, 8, 8, 8, 8, 5, 5, 5, 8, 8], "lineColorCode": 5}, {"lineNbr": "45", "lineDesc": "SOM", "days": ["A06U", "--", "--", "--", "--", "A06U", "A06U", "--", "--", "--", "A06U", "A06U"], "dayCodes": [5, 8, 8, 8, 8, 5, 5, 8, 8, 8, 5, 5], "lineColorCode": 5}, {"lineNbr": "46", "lineDesc": "SOM", "days": ["A06V", "A06V", "A06V", "--", "--", "--", "A06V", "A06V", "--", "--", "--", "--"], "dayCodes": [5, 5, 5, 8, 8, 8, 5, 5, 8, 8, 8, 8], "lineColorCode": 5}, {"lineNbr": "47", "lineDesc": "SOM", "days": ["--", "--", "--", "A06V", "A06V", "A06V", "--", "--", "--", "--", "A06V", "A06V"], "dayCodes": [8, 8, 8, 5, 5, 5, 8, 8, 8, 8, 5, 5], "lineColorCode": 5}, {"lineNbr": "48", "lineDesc": "SOM", "days": ["--", "A06W", "A06W", "--", "--", "--", "--", "A06W", "A06W", "A06W", "--", "--"], "dayCodes": [8, 5, 5, 8, 8, 8, 8, 5, 5, 5, 8, 8], "lineColorCode": 5}, {"lineNbr": "49", "lineDesc": "SOM", "days": ["A06W", "--", "--", "--", "--", "A06W", "A06W", "--", "--", "--", "A06W", "A06W"], "dayCodes": [5, 8, 8, 8, 8, 5, 5, 8, 8, 8, 5, 5], "lineColorCode": 5}, {"lineNbr": "50", "lineDesc": "SOM", "days": ["A06X", "--", "--", "--", "--", "A06X", "A06X", "A06X", "--", "--", "--", "A06X"], "dayCodes": [5, 8, 8, 8, 8, 5, 5, 5, 8, 8, 8, 5], "lineColorCode": 5}, {"lineNbr": "51", "lineDesc": "SOM", "days": ["--", "--", "--", "A06X", "A06X", "--", "--", "--", "A06X", "A06X", "A06X", "--"], "dayCodes": [8, 8, 8, 5, 5, 8, 8, 8, 5, 5, 5, 8], "lineColorCode": 5}, {"lineNbr": "52", "lineDesc": "SOM", "days": ["A06Y", "A06Y", "A06Y", "--", "--", "--", "A06Y", "A06Y", "--", "--", "--", "--"], "dayCodes": [5, 5, 5, 8, 8, 8, 5, 5, 8, 8, 8, 8], "lineColorCode": 5}, {"lineNbr": "53", "lineDesc": "SOM", "days": ["--", "--", "--", "A06Y", "A06Y", "A06Y", "--", "--", "--", "--", "A06Y", "A06Y"], "dayCodes": [8, 8, 8, 5, 5, 5, 8, 8, 8, 8, 5, 5], "lineColorCode": 5}, {"lineNbr": "54", "lineDesc": "SOM", "days": ["--", "A06X", "A06X", "--", "--", "--", "--", "A06J", "A06V", "A06V", "--", "--"], "dayCodes": [8, 5, 5, 8, 8, 8, 8, 4, 5, 5, 8, 8], "lineColorCode": 99}, {"lineNbr": "55", "lineDesc": "SOM", "days": ["--", "--", "A06R", "A06W", "A06W", "--", "--", "--", "A06N", "A06N", "--", "--"], "dayCodes": [8, 8, 5, 5, 5, 8, 8, 8, 5, 5, 8, 8], "lineColorCode": 99}, {"lineNbr": "56", "lineDesc": "SOM", "days": ["--", "A06R", "A06Q", "A06Q", "--", "--", "--", "A06S", "A06S", "--", "--", "--"], "dayCodes": [8, 5, 5, 5, 8, 8, 8, 5, 5, 8, 8, 8], "lineColorCode": 99}, {"lineNbr": "57", "lineDesc": "SOM", "days": ["--", "--", "--", "A06U", "A06U", "--", "--", "--", "A06Y", "A06Y", "XX", "--"], "dayCodes": [8, 8, 8, 5, 5, 8, 8, 8, 5, 5, 7, 8], "lineColorCode": 99}, {"lineNbr": "58", "lineDesc": "SOM", "days": ["--", "--", "--", "M18N", "M18N", "M18N", "--", "--", "--", "--", "M18N", "M18N"], "dayCodes": [8, 8, 8, 6, 6, 6, 8, 8, 8, 8, 6, 6], "lineColorCode": 6}, {"lineNbr": "59", "lineDesc": "SOM", "days": ["M18N", "M18N", "M18N", "--", "--", "--", "M18N", "M18N", "--", "--", "--", "--"], "dayCodes": [6, 6, 6, 8, 8, 8, 6, 6, 8, 8, 8, 8], "lineColorCode": 6}, {"lineNbr": "60", "lineDesc": "SOM", "days": ["M18Q", "M18Q", "--", "--", "--", "--", "M18Q", "M18Q", "M18Q", "--", "--", "--"], "dayCodes": [6, 6, 8, 8, 8, 8, 6, 6, 6, 8, 8, 8], "lineColorCode": 6}, {"lineNbr": "61", "lineDesc": "SOM", "days": ["--", "--", "--", "--", "M18Q", "M18Q", "--", "--", "--", "M18Q", "M18Q", "M18Q"], "dayCodes": [8, 8, 8, 8, 6, 6, 8, 8, 8, 6, 6, 6], "lineColorCode": 6}, {"lineNbr": "62", "lineDesc": "SOM", "days": ["M18R", "--", "--", "--", "--", "M18R", "M18R", "M18R", "--", "--", "--", "M18R"], "dayCodes": [6, 8, 8, 8, 8, 6, 6, 6, 8, 8, 8, 6], "lineColorCode": 6}, {"lineNbr": "63", "lineDesc": "SOM", "days": ["--", "--", "--", "M18R", "M18R", "--", "--", "--", "M18R", "M18R", "M18R", "--"], "dayCodes": [8, 8, 8, 6, 6, 8, 8, 8, 6, 6, 6, 8], "lineColorCode": 6}, {"lineNbr": "64", "lineDesc": "SOM", "days": ["M18S", "M18S", "--", "--", "--", "M18S", "M18S", "--", "--", "--", "--", "M18S"], "dayCodes": [6, 6, 8, 8, 8, 6, 6, 8, 8, 8, 8, 6], "lineColorCode": 6}, {"lineNbr": "65", "lineDesc": "SOM", "days": ["--", "--", "M18S", "M18S", "M18S", "--", "--", "--", "--", "M18S", "M18S", "--"], "dayCodes": [8, 8, 6, 6, 6, 8, 8, 8, 8, 6, 6, 8], "lineColorCode": 6}, {"lineNbr": "66", "lineDesc": "SOM", "days": ["--", "--", "M18U", "M18U", "M18U", "--", "--", "--", "M18U", "M18U", "--", "--"], "dayCodes": [8, 8, 6, 6, 6, 8, 8, 8, 6, 6, 8, 8], "lineColorCode": 6}, {"lineNbr": "67", "lineDesc": "SOM", "days": ["M18U", "M18U", "--", "--", "--", "M18U", "M18U", "M18U", "--", "--", "--", "--"], "dayCodes": [6, 6, 8, 8, 8, 6, 6, 6, 8, 8, 8, 8], "lineColorCode": 6}, {"lineNbr": "68", "lineDesc": "SOM", "days": ["--", "M18V", "M18V", "--", "--", "--", "--", "M18V", "M18V", "M18V", "--", "--"], "dayCodes": [8, 6, 6, 8, 8, 8, 8, 6, 6, 6, 8, 8], "lineColorCode": 6}, {"lineNbr": "69", "lineDesc": "SOM", "days": ["M18V", "--", "--", "--", "--", "M18V", "M18V", "--", "--", "--", "M18V", "M18V"], "dayCodes": [6, 8, 8, 8, 8, 6, 6, 8, 8, 8, 6, 6], "lineColorCode": 6}, {"lineNbr": "70", "lineDesc": "SOM", "days": ["--", "M18W", "M18W", "--", "--", "--", "--", "M18W", "M18W", "M18W", "--", "--"], "dayCodes": [8, 6, 6, 8, 8, 8, 8, 6, 6, 6, 8, 8], "lineColorCode": 6}, {"lineNbr": "71", "lineDesc": "SOM", "days": ["M18W", "--", "--", "--", "--", "M18W", "M18W", "--", "--", "--", "M18W", "M18W"], "dayCodes": [6, 8, 8, 8, 8, 6, 6, 8, 8, 8, 6, 6], "lineColorCode": 6}, {"lineNbr": "72", "lineDesc": "SOM", "days": ["--", "M18X", "M18X", "M18X", "--", "--", "--", "M18X", "M18X", "--", "--", "--"], "dayCodes": [8, 6, 6, 6, 8, 8, 8, 6, 6, 8, 8, 8], "lineColorCode": 6}, {"lineNbr": "73", "lineDesc": "SOM", "days": ["M18X", "--", "--", "--", "M18X", "M18X", "M18X", "--", "--", "--", "--", "M18X"], "dayCodes": [6, 8, 8, 8, 6, 6, 6, 8, 8, 8, 8, 6], "lineColorCode": 6}, {"lineNbr": "74", "lineDesc": "SOM", "days": ["M18Y", "M18Y", "M18Y", "--", "--", "--", "M18Y", "M18Y", "--", "--", "--", "--"], "dayCodes": [6, 6, 6, 8, 8, 8, 6, 6, 8, 8, 8, 8], "lineColorCode": 6}, {"lineNbr": "75", "lineDesc": "SOM", "days": ["--", "--", "--", "M18Y", "M18Y", "M18Y", "--", "--", "--", "--", "M18Y", "M18Y"], "dayCodes": [8, 8, 8, 6, 6, 6, 8, 8, 8, 8, 6, 6], "lineColorCode": 6}, {"lineNbr": "76", "lineDesc": "SOM", "days": ["--", "--", "--", "M18V", "M18V", "--", "--", "--", "--", "M18X", "M18X", "M18U"], "dayCodes": [8, 8, 8, 6, 6, 8, 8, 8, 8, 6, 6, 6], "lineColorCode": 99}, {"lineNbr": "77", "lineDesc": "SOM", "days": ["--", "--", "M18R", "M18W", "M18W", "--", "--", "--", "M18N", "M18N", "--", "--"], "dayCodes": [8, 8, 6, 6, 6, 8, 8, 8, 6, 6, 8, 8], "lineColorCode": 99}, {"lineNbr": "78", "lineDesc": "SOM", "days": ["--", "M18R", "M18Q", "M18Q", "--", "--", "--", "M18S", "M18S", "--", "--", "--"], "dayCodes": [8, 6, 6, 6, 8, 8, 8, 6, 6, 8, 8, 8], "lineColorCode": 99}, {"lineNbr": "79", "lineDesc": "SOM", "days": ["--", "--", "--", "A10O", "A10O", "--", "--", "--", "M18Y", "M18Y", "M18U", "--"], "dayCodes": [8, 8, 8, 9, 9, 8, 8, 8, 6, 6, 6, 8], "lineColorCode": 99}, {"lineNbr": "80", "lineDesc": "SOM", "days": ["--", "XX", "XX", "XX", "--", "--", "--", "--", "XX", "XX", "--", "--"], "dayCodes": [8, 7, 7, 7, 8, 8, 8, 8, 7, 7, 8, 8], "lineColorCode": 7}, {"lineNbr": "81", "lineDesc": "SOM", "days": ["--", "--", "XX", "XX", "XX", "--", "--", "--", "--", "XX", "XX", "--"], "dayCodes": [8, 8, 7, 7, 7, 8, 8, 8, 8, 7, 7, 8], "lineColorCode": 7}, {"lineNbr": "82", "lineDesc": "SOM", "days": ["--", "--", "--", "XX", "XX", "XX", "--", "--", "--", "--", "XX", "XX"], "dayCodes": [8, 8, 8, 7, 7, 7, 8, 8, 8, 8, 7, 7], "lineColorCode": 7}, {"lineNbr": "83", "lineDesc": "SOM", "days": ["XX", "--", "--", "--", "XX", "XX", "XX", "--", "--", "--", "--", "XX"], "dayCodes": [7, 8, 8, 8, 7, 7, 7, 8, 8, 8, 8, 7], "lineColorCode": 7}, {"lineNbr": "84", "lineDesc": "SOM", "days": ["XX", "XX", "--", "--", "--", "XX", "XX", "XX", "--", "--", "--", "--"], "dayCodes": [7, 7, 8, 8, 8, 7, 7, 7, 8, 8, 8, 8], "lineColorCode": 7}, {"lineNbr": "85", "lineDesc": "SOM", "days": ["--", "XX", "XX", "--", "--", "--", "XX", "XX", "XX", "--", "--", "--"], "dayCodes": [8, 7, 7, 8, 8, 8, 7, 7, 7, 8, 8, 8], "lineColorCode": 7}, {"lineNbr": "86", "lineDesc": "SOM", "days": ["--", "--", "XX", "XX", "--", "--", "--", "XX", "XX", "XX", "--", "--"], "dayCodes": [8, 8, 7, 7, 8, 8, 8, 7, 7, 7, 8, 8], "lineColorCode": 7}, {"lineNbr": "87", "lineDesc": "SOM", "days": ["--", "--", "--", "XX", "XX", "--", "--", "--", "XX", "XX", "XX", "--"], "dayCodes": [8, 8, 8, 7, 7, 8, 8, 8, 7, 7, 7, 8], "lineColorCode": 7}, {"lineNbr": "88", "lineDesc": "SOM", "days": ["XX", "--", "--", "--", "XX", "XX", "--", "--", "--", "--", "XX", "XX"], "dayCodes": [7, 8, 8, 8, 7, 7, 8, 8, 8, 8, 7, 7], "lineColorCode": 7}, {"lineNbr": "89", "lineDesc": "SOM", "days": ["XX", "--", "--", "--", "--", "XX", "XX", "--", "--", "--", "XX", "XX"], "dayCodes": [7, 8, 8, 8, 8, 7, 7, 8, 8, 8, 7, 7], "lineColorCode": 7}, {"lineNbr": "90", "lineDesc": "SOM", "days": ["XX", "XX", "--", "--", "--", "--", "XX", "XX", "--", "--", "--", "XX"], "dayCodes": [7, 7, 8, 8, 8, 8, 7, 7, 8, 8, 8, 7], "lineColorCode": 7}, {"lineNbr": "91", "lineDesc": "SOM", "days": ["XX", "XX", "XX", "--", "--", "--", "--", "XX", "XX", "--", "--", "--"], "dayCodes": [7, 7, 7, 8, 8, 8, 8, 7, 7, 8, 8, 8], "lineColorCode": 7}, {"lineNbr": "92", "lineDesc": "SOM", "days": ["--", "XX", "XX", "XX", "--", "--", "--", "--", "XX", "XX", "--", "--"], "dayCodes": [8, 7, 7, 7, 8, 8, 8, 8, 7, 7, 8, 8], "lineColorCode": 7}, {"lineNbr": "93", "lineDesc": "SOM", "days": ["XX", "--", "--", "--", "XX", "XX", "XX", "--", "--", "--", "--", "XX"], "dayCodes": [7, 8, 8, 8, 7, 7, 7, 8, 8, 8, 8, 7], "lineColorCode": 7}, {"lineNbr": "94", "lineDesc": "SOM", "days": ["--", "--", "XX", "XX", "--", "--", "--", "XX", "XX", "XX", "--", "--"], "dayCodes": [8, 8, 7, 7, 8, 8, 8, 7, 7, 7, 8, 8], "lineColorCode": 7}, {"lineNbr": "95", "lineDesc": "SOM", "days": ["--", "--", "--", "--", "XX", "XX", "--", "--", "--", "XX", "XX", "XX"], "dayCodes": [8, 8, 8, 8, 7, 7, 8, 8, 8, 7, 7, 7], "lineColorCode": 7}];
+
+        function getLineData(lineNbr) {
+            return ANNUAL_BID.find(l => l.lineNbr === lineNbr || l.lineNbr === String(lineNbr));
+        }
+
+        // Get display number from composite key (e.g., "5-SSOM" -> "5")
+        function getDisplayNumber(lineNbr) {
+            if (!lineNbr) return '';
+            if (typeof PatternLoader !== 'undefined' && PatternLoader.parseCompositeKey) {
+                var parsed = PatternLoader.parseCompositeKey(lineNbr);
+                return parsed.number;
+            }
+            // Fallback: parse composite key manually
+            var str = String(lineNbr);
+            var match = str.match(/^(\d+)-/);
+            if (match) return match[1];
+            return str;
+        }
+
+        let isAdmin = false;
+        let assignments = {};
+        let confirmations = {};
+
+        function showPasswordModal() {
+            document.getElementById('passwordModal').style.display = 'flex';
+            document.getElementById('passwordInput').focus();
+            document.getElementById('passwordError').style.display = 'none';
+        }
+
+        function hidePasswordModal() {
+            document.getElementById('passwordModal').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+        }
+
+        async function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('passwordError');
+            
+            // Show loading state
+            errorDiv.textContent = 'Checking...';
+            errorDiv.style.display = 'block';
+            errorDiv.style.color = '#4ecca3';
+            
+            try {
+                // Sign in with Firebase Authentication
+                const email = 'chris.delta.occ@gmail.com';
+                await firebase.auth().signInWithEmailAndPassword(email, input);
+                
+                // Success!
+                isAdmin = true;
+                sessionStorage.setItem('polish_bid_admin', 'true');
+                hidePasswordModal();
+                updateAdminUI();
+                renderList();
+                
+                // Clear the password input
+                document.getElementById('passwordInput').value = '';
+                errorDiv.style.display = 'none';
+                
+            } catch (error) {
+                // Failed - show error
+                errorDiv.textContent = 'Incorrect password';
+                errorDiv.style.display = 'block';
+                errorDiv.style.color = '#e94560';
+                console.error('Login error:', error);
+            }
+        }
+
+        function updateAdminUI() {
+            const indicator = document.getElementById('modeIndicator');
+            const adminBtn = document.getElementById('adminBtn');
+            
+            if (isAdmin) {
+                indicator.textContent = 'ADMIN';
+                indicator.classList.remove('viewer');
+                indicator.classList.add('admin');
+                adminBtn.textContent = 'Logout';
+                adminBtn.onclick = logout;
+            } else {
+                indicator.textContent = 'VIEWER';
+                indicator.classList.remove('admin');
+                indicator.classList.add('viewer');
+                adminBtn.textContent = 'Admin Login';
+                adminBtn.onclick = showPasswordModal;
+            }
+        }
+
+        function logout() {
+            firebase.auth().signOut();
+            isAdmin = false;
+            sessionStorage.removeItem('polish_bid_admin');
+            updateAdminUI();
+            renderList();
+        }
+
+        function updateSyncStatus(status, message) {
+            const dot = document.getElementById('syncDot');
+            const text = document.getElementById('syncText');
+            
+            dot.classList.remove('syncing', 'error');
+            if (status === 'syncing') dot.classList.add('syncing');
+            if (status === 'error') dot.classList.add('error');
+            text.textContent = message;
+        }
+
+        async function loadData() {
+            updateSyncStatus('syncing', 'Loading...');
+            
+            try {
+                // Load assignments (from bid/assignments to match main page)
+                const assignSnap = await database.ref('bid/assignments').once('value');
+                assignments = assignSnap.val() || {};
+                
+                // Load confirmations
+                const confSnap = await database.ref('bid/confirmations').once('value');
+                confirmations = confSnap.val() || {};
+                
+                renderList();
+                updateStats();
+                updateSyncStatus('connected', 'Connected');
+            } catch (error) {
+                console.error('Load error:', error);
+                updateSyncStatus('error', 'Connection error');
+            }
+        }
+
+        function renderList() {
+            const tbody = document.getElementById('confirmationList');
+            tbody.innerHTML = '';
+            
+            // SSOM Group Header
+            const ssomHeader = document.createElement('tr');
+            ssomHeader.className = 'group-header';
+            ssomHeader.innerHTML = `<td colspan="6">SSOM (${GROUP1.length})</td>`;
+            tbody.appendChild(ssomHeader);
+            
+            // SSOM entries
+            GROUP1.forEach(person => {
+                const key = `g1-${person.nbr}`;
+                const line = assignments[key] || '';
+                const isConfirmed = confirmations[key] === true;
+                const hasLine = line !== '';
+                const lineData = hasLine ? getLineData(line) : null;
+                
+                const row = document.createElement('tr');
+                if (isConfirmed) row.classList.add('confirmed');
+                
+                row.innerHTML = `
+                    <td class="sen-num">${person.nbr}</td>
+                    <td class="sen-name">${person.name}</td>
+                    <td class="line-num ${hasLine ? '' : 'empty'}">${getDisplayNumber(line) || '--'}</td>
+                    <td class="pattern-cell">${hasLine && lineData ? renderPattern(lineData) : '<span style="color:#555;">--</span>'}</td>
+                    <td class="confirm-status">
+                        ${hasLine ? (isConfirmed ?
+                            '<span class="confirmed-badge">🔒 Confirmed</span>' :
+                            '<span class="pending-badge">⏳ Pending</span>') :
+                            '<span style="color:#555;">--</span>'}
+                    </td>
+                    <td style="text-align:center;">
+                        ${hasLine ? `<input type="checkbox" class="confirm-checkbox"
+                            data-key="${key}"
+                            ${isConfirmed ? 'checked' : ''}
+                            ${isAdmin ? '' : 'disabled'}
+                            onchange="toggleConfirmation('${key}', this.checked)">` : ''}
+                    </td>
+                `;
+
+                tbody.appendChild(row);
+            });
+
+            // SOM Group Header
+            const somHeader = document.createElement('tr');
+            somHeader.className = 'group-header';
+            somHeader.innerHTML = `<td colspan="6">SOM (${GROUP2.length})</td>`;
+            tbody.appendChild(somHeader);
+
+            // SOM entries
+            GROUP2.forEach(person => {
+                const key = `g2-${person.nbr}`;
+                const line = assignments[key] || '';
+                const isConfirmed = confirmations[key] === true;
+                const hasLine = line !== '';
+                const lineData = hasLine ? getLineData(line) : null;
+
+                const row = document.createElement('tr');
+                if (isConfirmed) row.classList.add('confirmed');
+
+                row.innerHTML = `
+                    <td class="sen-num">${person.nbr}</td>
+                    <td class="sen-name">${person.name}</td>
+                    <td class="line-num ${hasLine ? '' : 'empty'}">${getDisplayNumber(line) || '--'}</td>
+                    <td class="pattern-cell">${hasLine && lineData ? renderPattern(lineData) : '<span style="color:#555;">--</span>'}</td>
+                    <td class="confirm-status">
+                        ${hasLine ? (isConfirmed ? 
+                            '<span class="confirmed-badge">🔒 Confirmed</span>' : 
+                            '<span class="pending-badge">⏳ Pending</span>') : 
+                            '<span style="color:#555;">--</span>'}
+                    </td>
+                    <td style="text-align:center;">
+                        ${hasLine ? `<input type="checkbox" class="confirm-checkbox" 
+                            data-key="${key}" 
+                            ${isConfirmed ? 'checked' : ''} 
+                            ${isAdmin ? '' : 'disabled'}
+                            onchange="toggleConfirmation('${key}', this.checked)">` : ''}
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function renderPattern(lineData) {
+            let html = '<div class="pattern-row">';
+            for (let i = 0; i < 12; i++) {
+                const val = lineData.days[i] || '-';
+                const dayCode = lineData.dayCodes[i] || 0;
+                const bgColor = COLOR_MAP[dayCode] || '#ddd';
+                const textColor = LIGHT_TEXT_CODES.includes(dayCode) ? '#fff' : '#000';
+                html += `<span class="pattern-day" style="background:${bgColor}; color:${textColor};">${val}</span>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        async function toggleConfirmation(key, confirmed) {
+            if (!isAdmin) return;
+            
+            updateSyncStatus('syncing', 'Saving...');
+            
+            try {
+                await database.ref(`bid/confirmations/${key}`).set(confirmed);
+                confirmations[key] = confirmed;
+                renderList();
+                updateStats();
+                updateSyncStatus('connected', 'Saved');
+            } catch (error) {
+                console.error('Save error:', error);
+                updateSyncStatus('error', 'Save failed');
+            }
+        }
+
+        function updateStats() {
+            let assigned = 0;
+            let confirmed = 0;
+            
+            GROUP1.forEach(person => {
+                const key = `g1-${person.nbr}`;
+                if (assignments[key]) {
+                    assigned++;
+                    if (confirmations[key]) {
+                        confirmed++;
+                    }
+                }
+            });
+            
+            GROUP2.forEach(person => {
+                const key = `g2-${person.nbr}`;
+                if (assignments[key]) {
+                    assigned++;
+                    if (confirmations[key]) {
+                        confirmed++;
+                    }
+                }
+            });
+            
+            document.getElementById('totalAssigned').textContent = assigned;
+            document.getElementById('totalConfirmed').textContent = confirmed;
+            document.getElementById('totalPending').textContent = assigned - confirmed;
+        }
+
+        // Listen for real-time updates
+        function setupRealtimeListeners() {
+            database.ref('bid/assignments').on('value', (snapshot) => {
+                assignments = snapshot.val() || {};
+                renderList();
+                updateStats();
+            });
+            
+            database.ref('bid/confirmations').on('value', (snapshot) => {
+                confirmations = snapshot.val() || {};
+                renderList();
+                updateStats();
+            });
+        }
+
+        // Check for existing admin session
+        function checkExistingSession() {
+            // Check sessionStorage first
+            if (sessionStorage.getItem('polish_bid_admin') === 'true') {
+                isAdmin = true;
+                updateAdminUI();
+            }
+            
+            // Also listen for Firebase auth state changes
+            firebase.auth().onAuthStateChanged((user) => {
+                if (user) {
+                    isAdmin = true;
+                    sessionStorage.setItem('polish_bid_admin', 'true');
+                    updateAdminUI();
+                    renderList();
+                }
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadSeniorityLists();
+            checkExistingSession();
+            loadData();
+            setupRealtimeListeners();
+        });
+    </script>
+</body>
+</html>

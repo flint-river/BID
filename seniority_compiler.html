@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seniority Compiler - Polish Bid</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+        .header { background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%); padding: 20px; text-align: center; border-bottom: 2px solid #4ecca3; }
+        .header h1 { color: #4ecca3; margin-bottom: 5px; }
+        .header p { color: #888; font-size: 14px; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        .security-notice { background: #0f3460; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4ecca3; }
+        .security-notice h3 { color: #4ecca3; margin-bottom: 8px; }
+        .security-notice p { color: #888; font-size: 13px; }
+        .step-section { background: #16213e; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .step-section h2 { color: #4ecca3; margin-bottom: 15px; font-size: 18px; }
+        .instructions { background: #0f3460; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        .instructions h4 { color: #4ecca3; margin-bottom: 10px; }
+        .instructions ol { color: #ccc; margin-left: 20px; font-size: 13px; line-height: 1.8; }
+        .instructions li strong { color: #fff; }
+        textarea { width: 100%; height: 200px; background: #1a1a2e; color: #fff; border: 1px solid #4ecca3; border-radius: 4px; padding: 12px; font-family: monospace; font-size: 12px; resize: vertical; }
+        textarea:focus { outline: none; border-color: #6ee7b7; box-shadow: 0 0 10px rgba(78, 204, 163, 0.3); }
+        .btn { padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; transition: all 0.2s; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        .btn-primary { background: #4ecca3; color: #1a1a2e; }
+        .btn-danger { background: #e94560; color: white; }
+        .btn-secondary { background: #666; color: white; }
+        .btn-purple { background: #9b59b6; color: white; }
+        .btn-orange { background: #f39c12; color: #1a1a2e; }
+        .btn-blue { background: #3498db; color: white; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 15px; padding: 15px; background: #0f3460; border-radius: 6px; }
+        .toolbar-section { display: flex; gap: 8px; align-items: center; }
+        .toolbar-divider { width: 1px; height: 30px; background: #444; margin: 0 10px; }
+        .search-box { padding: 10px 15px; border: 1px solid #4ecca3; border-radius: 4px; background: #1a1a2e; color: #fff; font-size: 14px; width: 250px; }
+        .search-box:focus { outline: none; border-color: #6ee7b7; }
+        .search-box::placeholder { color: #666; }
+        .filter-btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; transition: all 0.2s; opacity: 0.7; }
+        .filter-btn.active { opacity: 1; font-weight: bold; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .filter-btn:hover { opacity: 1; }
+        .table-container { border: 1px solid #333; border-radius: 8px; overflow: hidden; }
+        .table-scroll { max-height: calc(100vh - 500px); min-height: 400px; overflow-y: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        thead { position: sticky; top: 0; background: #0f3460; z-index: 10; }
+        th { padding: 12px 15px; text-align: left; border-bottom: 2px solid #4ecca3; font-weight: bold; color: #4ecca3; }
+        td { padding: 10px 15px; border-bottom: 1px solid #333; }
+        tr:hover { background: rgba(78, 204, 163, 0.05); }
+        tr.ssom-row { background: rgba(243, 156, 18, 0.1); }
+        tr.som-row { background: rgba(52, 152, 219, 0.1); }
+        tr.new-row { background: rgba(46, 204, 113, 0.2); }
+        tr.conflict-row { background: rgba(155, 89, 182, 0.2); }
+        tr.highlight { background: rgba(78, 204, 163, 0.2) !important; animation: highlight-fade 2s ease-out; }
+        @keyframes highlight-fade { 0% { background: rgba(78, 204, 163, 0.4); } 100% { background: rgba(78, 204, 163, 0.2); } }
+        .title-select { padding: 6px 10px; border-radius: 4px; border: 1px solid #444; background: #1a1a2e; color: #fff; font-size: 13px; cursor: pointer; }
+        .title-select.changed { background: #4ecca3; color: #1a1a2e; font-weight: bold; }
+        .group-badge { padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .group-badge.group1 { background: #f39c12; color: #1a1a2e; }
+        .group-badge.group2 { background: #3498db; color: white; }
+        .group-badge.excluded { background: #444; color: #888; }
+        .status-badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; }
+        .status-badge.new { background: #2ecc71; color: #1a1a2e; }
+        .status-badge.matched { background: #3498db; color: white; }
+        .status-badge.conflict { background: #9b59b6; color: white; }
+        .abbreviated { font-family: monospace; color: #4ecca3; font-size: 13px; }
+        .vacancy-row { color: #e94560; font-style: italic; }
+        .preview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .preview-box { background: #1a1a2e; padding: 20px; border-radius: 8px; }
+        .preview-box.ssom { border-left: 4px solid #f39c12; }
+        .preview-box.som { border-left: 4px solid #3498db; }
+        .preview-box h3 { margin-bottom: 15px; }
+        .preview-box h3.ssom-title { color: #f39c12; }
+        .preview-box h3.som-title { color: #3498db; }
+        .preview-list { max-height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; color: #888; }
+        .preview-list div { padding: 3px 0; }
+        .download-status { margin-top: 15px; padding: 10px; border-radius: 4px; }
+        .hidden { display: none !important; }
+        .stats-bar { display: flex; gap: 20px; padding: 10px 15px; background: #0f3460; border-radius: 6px; margin-bottom: 15px; font-size: 13px; flex-wrap: wrap; }
+        .stat-item { color: #888; }
+        .stat-item strong { color: #4ecca3; }
+        .stat-item.new strong { color: #2ecc71; }
+        .back-link { color: #4ecca3; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; margin-bottom: 20px; }
+        .back-link:hover { text-decoration: underline; }
+        .workflow-status { background: #0f3460; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap; }
+        .workflow-step { display: flex; align-items: center; gap: 8px; color: #666; }
+        .workflow-step.active { color: #4ecca3; }
+        .workflow-step.completed { color: #2ecc71; }
+        .workflow-step .step-number { width: 28px; height: 28px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 12px; }
+        .workflow-step.active .step-number { background: #4ecca3; color: #1a1a2e; }
+        .workflow-step.completed .step-number { background: #2ecc71; color: #1a1a2e; }
+        .workflow-arrow { color: #444; font-size: 20px; }
+        .merge-summary { background: #0f3460; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .merge-summary h3 { color: #4ecca3; margin-bottom: 15px; }
+        .merge-stats { display: flex; gap: 30px; flex-wrap: wrap; }
+        .merge-stat { text-align: center; }
+        .merge-stat .number { font-size: 32px; font-weight: bold; }
+        .merge-stat .label { font-size: 12px; color: #888; }
+        .merge-stat.matched .number { color: #3498db; }
+        .merge-stat.new .number { color: #2ecc71; }
+        .merge-stat.removed .number { color: #e74c3c; }
+        .merge-stat.conflicts .number { color: #9b59b6; }
+        .merge-stat.total .number { color: #4ecca3; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: #16213e; padding: 30px; border-radius: 12px; text-align: center; max-width: 400px; width: 90%; }
+        .modal-content h2 { color: #4ecca3; margin-bottom: 20px; }
+        .modal-content input { width: 100%; padding: 12px; border: 1px solid #4ecca3; border-radius: 4px; background: #1a1a2e; color: #fff; font-size: 16px; margin-bottom: 15px; }
+        .modal-content input:focus { outline: none; border-color: #6ee7b7; }
+        .error-msg { color: #e94560; font-size: 13px; margin-bottom: 10px; display: none; }
+        .loaded-info { background: #2ecc71; color: #1a1a2e; padding: 10px 15px; border-radius: 6px; margin-top: 15px; font-weight: bold; }
+        /* Changes to Review Section */
+        .changes-section { background: #16213e; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #9b59b6; }
+        .changes-section h2 { color: #9b59b6; margin-bottom: 15px; }
+        .changes-section p { color: #888; margin-bottom: 15px; font-size: 13px; }
+        .change-row { display: flex; align-items: center; gap: 15px; padding: 12px 15px; background: #0f3460; border-radius: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+        .change-name { font-weight: bold; min-width: 200px; }
+        .change-titles { display: flex; align-items: center; gap: 10px; }
+        .change-title-box { padding: 6px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; }
+        .change-title-box.pafca { background: #e74c3c; color: white; }
+        .change-title-box.yours { background: #3498db; color: white; }
+        .change-arrow { color: #888; font-size: 18px; }
+        .change-actions { display: flex; gap: 8px; margin-left: auto; }
+        .no-changes { color: #2ecc71; padding: 20px; text-align: center; font-size: 16px; }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <div id="passwordModal" class="modal show">
+        <div class="modal-content">
+            <h2>🔒 Admin Access Required</h2>
+            <p style="color:#888; margin-bottom:20px;">The Seniority Compiler is admin-only to protect sensitive data.</p>
+            <input type="password" id="passwordInput" placeholder="Enter admin password" onkeypress="if(event.key==='Enter')checkPassword()">
+            <div id="passwordError" class="error-msg"></div>
+            <button class="btn btn-primary" onclick="checkPassword()" style="width:100%;">Login</button>
+            <a href="index.html" style="display:block; margin-top:15px; color:#888; font-size:13px;">← Back to Bid App</a>
+        </div>
+    </div>
+
+    <div id="mainContent" class="hidden">
+        <div class="header">
+            <h1>📋 Seniority List Compiler</h1>
+            <p>Build and manage GROUP1 (SSOM) and GROUP2 (SOM) seniority lists</p>
+        </div>
+
+        <div class="container">
+            <a href="index.html" class="back-link">← Back to Polish Bid App</a>
+
+            <div class="workflow-status">
+                <div class="workflow-step active" id="wfStep1"><span class="step-number">1</span><span>Load Previous</span></div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step" id="wfStep2"><span class="step-number">2</span><span>Paste PAFCA Data</span></div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step" id="wfStep3"><span class="step-number">3</span><span>Compare & Merge</span></div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step" id="wfStep4"><span class="step-number">4</span><span>Review & Edit</span></div>
+                <span class="workflow-arrow">→</span>
+                <div class="workflow-step" id="wfStep5"><span class="step-number">5</span><span>Save & Export</span></div>
+            </div>
+
+            <div class="security-notice">
+                <h3>🔒 Security Notice</h3>
+                <p>All data stays in YOUR browser. Full names are never saved or transmitted. Only abbreviated names (LAST, FIR) are used in the final seniority lists.</p>
+            </div>
+
+            <div class="step-section" id="loadSection">
+                <h2>Step 1: Load Previous Work (Optional)</h2>
+                <p style="color:#888; margin-bottom:15px;">If you have a saved JSON file from before, load it first to preserve your title changes.</p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <label class="btn btn-purple" style="cursor:pointer;">
+                        📂 Load Previous Work (.json)
+                        <input type="file" id="loadFileInput" accept=".json" onchange="loadWorkFromFile(event)" style="display:none;">
+                    </label>
+                    <span style="color:#666;">or</span>
+                    <button class="btn btn-secondary" onclick="skipLoadStep()">Skip - Start Fresh</button>
+                </div>
+                <div id="loadedInfo" class="loaded-info hidden"></div>
+            </div>
+
+            <div class="step-section hidden" id="pasteSection">
+                <h2>Step 2: Paste PAFCA Office Seniority Data</h2>
+                <div class="instructions">
+                    <h4>📥 How to get the data:</h4>
+                    <ol>
+                        <li>Go to the <strong>PAFCA website</strong> and download the <strong>Excel version</strong> of the seniority list</li>
+                        <li>Open the Excel file and go to the <strong>"Office Seniority"</strong> tab</li>
+                        <li><strong style="color:#f39c12;">⚠️ IMPORTANT:</strong> Unhide the <strong>PPR column</strong> (Column D) - this contains Worker IDs needed for ASCENT export</li>
+                        <li>Select <strong>ALL data</strong> (Ctrl+A) including the header row</li>
+                        <li>Copy (Ctrl+C) and paste (Ctrl+V) into the box below</li>
+                    </ol>
+                </div>
+                <textarea id="seniorityPasteBox" placeholder="Paste the entire Office Seniority tab here (include header row)..."></textarea>
+                <div style="margin-top:15px; display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-primary" onclick="parseAndMerge()">Compare & Merge</button>
+                    <button class="btn btn-secondary" onclick="skipToPublish()">Skip - Use Loaded Data As-Is</button>
+                    <button class="btn btn-danger" onclick="clearAll()">Start Over</button>
+                </div>
+            </div>
+
+            <div id="mergeSummary" class="merge-summary hidden">
+                <h3>📊 Merge Results</h3>
+                <div class="merge-stats">
+                    <div class="merge-stat matched"><div class="number" id="mergeMatched">0</div><div class="label">Matched<br>(titles same)</div></div>
+                    <div class="merge-stat conflicts"><div class="number" id="mergeConflicts">0</div><div class="label">Differences<br>(review below)</div></div>
+                    <div class="merge-stat new"><div class="number" id="mergeNew">0</div><div class="label">New People<br>(added to PAFCA)</div></div>
+                    <div class="merge-stat removed"><div class="number" id="mergeRemoved">0</div><div class="label">Removed<br>(no longer on list)</div></div>
+                    <div class="merge-stat total"><div class="number" id="mergeTotal">0</div><div class="label">Total<br>(final list)</div></div>
+                </div>
+            </div>
+
+            <!-- Changes to Review Section -->
+            <div id="changesSection" class="changes-section hidden">
+                <h2>⚠️ Title Differences to Review</h2>
+                <p>Your saved title differs from PAFCA's current title. Review each and choose which to use:</p>
+                <div style="margin-bottom:15px; display:flex; gap:10px;">
+                    <button class="btn btn-sm btn-danger" onclick="acceptAllPafca()">Accept All PAFCA</button>
+                    <button class="btn btn-sm btn-blue" onclick="keepAllYours()">Keep All Yours</button>
+                </div>
+                <div id="changesList"></div>
+            </div>
+
+            <div id="step3" class="step-section hidden">
+                <h2>Step 3: Review & Edit Titles</h2>
+                <p style="color:#888; margin-bottom:15px;">Change titles for promotions, retirements, or vacancies. Only SSOM, SOM, and SOM-QA will be included in bid groups.</p>
+                <div class="toolbar">
+                    <div class="toolbar-section"><input type="text" class="search-box" id="searchBox" placeholder="🔍 Search by name..." oninput="filterTable()"></div>
+                    <div class="toolbar-divider"></div>
+                    <div class="toolbar-section">
+                        <button class="filter-btn active" id="filterAll" onclick="setFilter('all')" style="background:#4ecca3; color:#1a1a2e;">All (<span id="countAll">0</span>)</button>
+                        <button class="filter-btn" id="filterSsom" onclick="setFilter('ssom')" style="background:#f39c12; color:#1a1a2e;">SSOM (<span id="countSSOM">0</span>)</button>
+                        <button class="filter-btn" id="filterSom" onclick="setFilter('som')" style="background:#3498db; color:white;">SOM+QA (<span id="countSOM">0</span>)</button>
+                        <button class="filter-btn" id="filterNew" onclick="setFilter('new')" style="background:#2ecc71; color:#1a1a2e;">New (<span id="countNew">0</span>)</button>
+                        <button class="filter-btn" id="filterExcluded" onclick="setFilter('excluded')" style="background:#666; color:white;">Excluded (<span id="countExcluded">0</span>)</button>
+                    </div>
+                    <div class="toolbar-divider"></div>
+                    <div class="toolbar-section">
+                        <button class="btn btn-orange" onclick="addVacancy('ssom')">+ Add SSOM Vacancy</button>
+                        <button class="btn btn-blue" onclick="addVacancy('som')">+ Add SOM Vacancy</button>
+                    </div>
+                </div>
+                <div class="stats-bar">
+                    <div class="stat-item">Total: <strong id="statTotal">0</strong></div>
+                    <div class="stat-item">Showing: <strong id="statShowing">0</strong></div>
+                    <div class="stat-item">Titles Changed: <strong id="statChanged">0</strong></div>
+                    <div class="stat-item new">New: <strong id="statNew">0</strong></div>
+                </div>
+                <div class="table-container"><div class="table-scroll">
+                    <table><thead><tr>
+                        <th style="width:60px;">Sen#</th>
+                        <th style="width:200px;">Full Name</th>
+                        <th style="width:120px;">Title</th>
+                        <th style="width:120px;">Abbreviated</th>
+                        <th style="width:100px;">Group</th>
+                        <th style="width:80px;">Status</th>
+                        <th style="width:100px;">Actions</th>
+                    </tr></thead><tbody id="seniorityTableBody"></tbody></table>
+                </div></div>
+            </div>
+
+            <div id="step4" class="step-section hidden">
+                <h2>Step 4: Save & Export</h2>
+                <div class="preview-grid">
+                    <div class="preview-box ssom"><h3 class="ssom-title">GROUP1 - SSOM (<span id="previewSSOMCount">0</span>)</h3><div class="preview-list" id="previewSSOM"></div></div>
+                    <div class="preview-box som"><h3 class="som-title">GROUP2 - SOM (<span id="previewSOMCount">0</span>)</h3><div class="preview-list" id="previewSOM"></div></div>
+                </div>
+                
+                <div style="background:#0f3460; padding:20px; border-radius:8px; margin-bottom:20px; border-left:4px solid #e74c3c;">
+                    <h3 style="color:#e74c3c; margin-bottom:10px;">🚀 Publish to Live App</h3>
+                    <p style="color:#888; font-size:13px; margin-bottom:15px;">This updates the seniority list in the live bid app immediately. All pages will use the new list.</p>
+                    <button class="btn" onclick="publishToFirebase()" style="background:#e74c3c; color:white; font-size:16px; padding:15px 30px;">🚀 Publish to Firebase (Live)</button>
+                    <div id="publishStatus" style="margin-top:10px;"></div>
+                </div>
+                
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:15px;">
+                    <button class="btn" onclick="saveWorkToFile()" style="background:#2ecc71; color:white; font-size:16px; padding:15px 30px;">💾 Save Work for Later (.json)</button>
+                </div>
+                <p style="color:#888; font-size:12px; margin-bottom:20px;">Save this JSON file to your computer (NOT GitHub). Load it next time to preserve your changes.</p>
+                <hr style="border-color:#333; margin:20px 0;">
+                <p style="color:#666; font-size:12px; margin-bottom:10px;">Manual export (no longer needed if you use Publish to Firebase):</p>
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-secondary" onclick="downloadAllFiles()">📥 Download GitHub Files (4)</button>
+                    <button class="btn btn-secondary" onclick="copyToClipboard()">📋 Copy Arrays to Clipboard</button>
+                </div>
+                <div id="downloadStatus" class="download-status"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = { apiKey: "AIzaSyDD7V8bTZK8q7ADvR7rx56n9UDZs5O7PjU", authDomain: "bid2026-58308.firebaseapp.com", databaseURL: "https://bid2026-58308-default-rtdb.firebaseio.com", projectId: "bid2026-58308" };
+        firebase.initializeApp(firebaseConfig);
+
+        let seniorityData = [], previousData = [], currentFilter = 'all', searchTerm = '', hasPreviousData = false;
+        let changestoReview = []; // Track PAFCA changes that need review
+
+        if (sessionStorage.getItem('polish_bid_admin') === 'true') {
+            document.getElementById('passwordModal').classList.remove('show');
+            document.getElementById('mainContent').classList.remove('hidden');
+        }
+
+        async function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('passwordError');
+            errorDiv.textContent = 'Checking...'; errorDiv.style.display = 'block'; errorDiv.style.color = '#4ecca3';
+            try {
+                await firebase.auth().signInWithEmailAndPassword('chris.delta.occ@gmail.com', input);
+                sessionStorage.setItem('polish_bid_admin', 'true');
+                document.getElementById('passwordModal').classList.remove('show');
+                document.getElementById('mainContent').classList.remove('hidden');
+            } catch (e) { errorDiv.textContent = 'Incorrect password'; errorDiv.style.color = '#e94560'; }
+        }
+
+        function updateWorkflowStatus(step) {
+            for (let i = 1; i <= 5; i++) {
+                const el = document.getElementById('wfStep' + i);
+                el.classList.remove('active', 'completed');
+                if (i < step) el.classList.add('completed');
+                if (i === step) el.classList.add('active');
+            }
+        }
+
+        function loadWorkFromFile(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const saveData = JSON.parse(e.target.result);
+                    if (!saveData.data || !Array.isArray(saveData.data)) throw new Error('Invalid file format');
+                    previousData = saveData.data; hasPreviousData = true;
+                    const loadedInfo = document.getElementById('loadedInfo');
+                    loadedInfo.classList.remove('hidden');
+                    loadedInfo.innerHTML = `✅ Loaded: ${file.name}<br><span style="font-weight:normal; font-size:12px;">${saveData.data.length} records | SSOM: ${saveData.ssomCount || '?'} | SOM: ${saveData.somCount || '?'}</span>`;
+                    document.getElementById('pasteSection').classList.remove('hidden');
+                    updateWorkflowStatus(2);
+                } catch (err) { alert('Error loading file: ' + err.message); }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function skipLoadStep() { hasPreviousData = false; previousData = []; document.getElementById('pasteSection').classList.remove('hidden'); updateWorkflowStatus(2); }
+
+        function parseAndMerge() {
+            const rawData = document.getElementById('seniorityPasteBox').value.trim();
+            if (!rawData) { alert('Please paste the PAFCA seniority data first.'); return; }
+            const lines = rawData.split('\n');
+            if (lines.length < 3) { alert('Not enough data.'); return; }
+            
+            let headerRowIdx = -1, nameIdx = -1, titleIdx = -1, seniorityIdx = -1, pprIdx = -1;
+            for (let i = 0; i < Math.min(5, lines.length); i++) {
+                const cols = lines[i].split('\t');
+                const nIdx = cols.findIndex(h => h.trim().toUpperCase() === 'NAME');
+                const tIdx = cols.findIndex(h => h.trim().toUpperCase() === 'TITLE');
+                const pIdx = cols.findIndex(h => h.trim().toUpperCase() === 'PPR');
+                if (nIdx !== -1 && tIdx !== -1) { headerRowIdx = i; nameIdx = nIdx; titleIdx = tIdx; seniorityIdx = 0; pprIdx = pIdx; break; }
+            }
+            if (headerRowIdx === -1) { alert('Could not find NAME or TITLE columns.'); return; }
+            
+            const newPafcaData = [];
+            for (let i = headerRowIdx + 1; i < lines.length; i++) {
+                const cols = lines[i].split('\t');
+                if (cols.length < Math.max(nameIdx, titleIdx) + 1) continue;
+                const senNum = cols[seniorityIdx] ? cols[seniorityIdx].trim() : String(i - headerRowIdx);
+                const fullName = cols[nameIdx] ? cols[nameIdx].trim() : '';
+                const title = cols[titleIdx] ? cols[titleIdx].trim().toUpperCase() : '';
+                const workerId = (pprIdx !== -1 && cols[pprIdx]) ? cols[pprIdx].trim() : '';
+                if (!fullName || fullName === '' || fullName.toUpperCase() === 'NAME') continue;
+                if (senNum && isNaN(parseInt(senNum)) && !senNum.includes('V')) continue;
+                newPafcaData.push({ seniorityNum: senNum, fullName, pafcaTitle: title, abbreviated: abbreviateName(fullName), workerId });
+            }
+            if (newPafcaData.length === 0) { alert('No valid data found.'); return; }
+            
+            let matchedCount = 0, newCount = 0, removedCount = 0, conflictCount = 0;
+            seniorityData = [];
+            changestoReview = [];
+            const previousByName = {};
+            previousData.forEach(p => { previousByName[p.fullName.toLowerCase().trim()] = p; });
+            
+            newPafcaData.forEach((pafca, idx) => {
+                const key = pafca.fullName.toLowerCase().trim();
+                const previous = previousByName[key];
+                if (previous) {
+                    // Simple check: does your saved title differ from PAFCA's current title?
+                    const titlesDiffer = previous.title !== pafca.pafcaTitle;
+                    
+                    if (titlesDiffer) {
+                        // Mismatch - flag for review
+                        conflictCount++;
+                        const record = {
+                            id: Date.now() + idx,
+                            seniorityNum: pafca.seniorityNum,
+                            fullName: pafca.fullName,
+                            originalTitle: pafca.pafcaTitle,
+                            title: previous.title, // Keep user's title for now, they can change it
+                            abbreviated: pafca.abbreviated,
+                            workerId: pafca.workerId || previous.workerId || '',
+                            isVacancy: false,
+                            status: 'conflict'
+                        };
+                        seniorityData.push(record);
+                        changestoReview.push({
+                            id: record.id,
+                            name: pafca.fullName,
+                            pafcaTitle: pafca.pafcaTitle,
+                            yourTitle: previous.title
+                        });
+                    } else {
+                        // Titles match - no review needed
+                        matchedCount++;
+                        seniorityData.push({
+                            id: Date.now() + idx,
+                            seniorityNum: pafca.seniorityNum,
+                            fullName: pafca.fullName,
+                            originalTitle: pafca.pafcaTitle,
+                            title: previous.title,
+                            abbreviated: pafca.abbreviated,
+                            workerId: pafca.workerId || previous.workerId || '',
+                            isVacancy: false,
+                            status: 'matched'
+                        });
+                    }
+                    delete previousByName[key];
+                } else {
+                    // New person from PAFCA
+                    newCount++;
+                    seniorityData.push({
+                        id: Date.now() + idx,
+                        seniorityNum: pafca.seniorityNum,
+                        fullName: pafca.fullName,
+                        originalTitle: pafca.pafcaTitle,
+                        title: pafca.pafcaTitle,
+                        abbreviated: pafca.abbreviated,
+                        workerId: pafca.workerId || '',
+                        isVacancy: false,
+                        status: 'new'
+                    });
+                }
+            });
+            removedCount = Object.keys(previousByName).length;
+            
+            // Update merge summary
+            document.getElementById('mergeMatched').textContent = matchedCount;
+            document.getElementById('mergeConflicts').textContent = conflictCount;
+            document.getElementById('mergeNew').textContent = newCount;
+            document.getElementById('mergeRemoved').textContent = removedCount;
+            document.getElementById('mergeTotal').textContent = seniorityData.length;
+            
+            // Show sections
+            if (hasPreviousData) {
+                document.getElementById('mergeSummary').classList.remove('hidden');
+                
+                // Show changes to review if any
+                if (changestoReview.length > 0) {
+                    document.getElementById('changesSection').classList.remove('hidden');
+                    renderChangesToReview();
+                } else {
+                    document.getElementById('changesSection').classList.add('hidden');
+                }
+            }
+            
+            document.getElementById('step3').classList.remove('hidden');
+            document.getElementById('step4').classList.remove('hidden');
+            updateWorkflowStatus(4);
+            renderTable(); updatePreview();
+            
+            if (hasPreviousData) {
+                let msg = `Merge complete!\n\n✅ Matched: ${matchedCount} (no changes)`;
+                if (conflictCount > 0) msg += `\n⚠️ PAFCA Changes: ${conflictCount} (review above)`;
+                if (newCount > 0) msg += `\n➕ New: ${newCount}`;
+                if (removedCount > 0) msg += `\n➖ Removed: ${removedCount}`;
+                msg += `\n\nTotal: ${seniorityData.length}`;
+                alert(msg);
+            }
+        }
+
+        function renderChangesToReview() {
+            const container = document.getElementById('changesList');
+            if (changestoReview.length === 0) {
+                container.innerHTML = '<div class="no-changes">✅ No PAFCA changes to review!</div>';
+                return;
+            }
+            
+            container.innerHTML = changestoReview.map(change => `
+                <div class="change-row" id="change-${change.id}">
+                    <div class="change-name">${change.name}</div>
+                    <div class="change-titles">
+                        <span class="change-title-box yours">${change.yourTitle}</span>
+                        <span class="change-arrow">→</span>
+                        <span class="change-title-box pafca">${change.pafcaTitle}</span>
+                    </div>
+                    <div class="change-actions">
+                        <button class="btn btn-sm btn-danger" onclick="acceptPafcaChange(${change.id}, '${change.pafcaTitle}')">Use PAFCA</button>
+                        <button class="btn btn-sm btn-blue" onclick="keepYourChange(${change.id}, '${change.yourTitle}')">Keep Yours</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function acceptPafcaChange(id, pafcaTitle) {
+            const person = seniorityData.find(p => p.id === id);
+            if (person) {
+                person.title = pafcaTitle;
+                person.status = 'matched';
+            }
+            // Remove from review list
+            changestoReview = changestoReview.filter(c => c.id !== id);
+            renderChangesToReview();
+            renderTable();
+            updatePreview();
+            
+            if (changestoReview.length === 0) {
+                document.getElementById('changesSection').classList.add('hidden');
+            }
+        }
+
+        function keepYourChange(id, yourTitle) {
+            const person = seniorityData.find(p => p.id === id);
+            if (person) {
+                person.title = yourTitle;
+                person.status = 'matched';
+            }
+            // Remove from review list
+            changestoReview = changestoReview.filter(c => c.id !== id);
+            renderChangesToReview();
+            renderTable();
+            updatePreview();
+            
+            if (changestoReview.length === 0) {
+                document.getElementById('changesSection').classList.add('hidden');
+            }
+        }
+
+        function acceptAllPafca() {
+            changestoReview.forEach(change => {
+                const person = seniorityData.find(p => p.id === change.id);
+                if (person) {
+                    person.title = change.pafcaTitle;
+                    person.status = 'matched';
+                }
+            });
+            changestoReview = [];
+            renderChangesToReview();
+            renderTable();
+            updatePreview();
+            document.getElementById('changesSection').classList.add('hidden');
+        }
+
+        function keepAllYours() {
+            changestoReview.forEach(change => {
+                const person = seniorityData.find(p => p.id === change.id);
+                if (person) {
+                    person.title = change.yourTitle;
+                    person.status = 'matched';
+                }
+            });
+            changestoReview = [];
+            renderChangesToReview();
+            renderTable();
+            updatePreview();
+            document.getElementById('changesSection').classList.add('hidden');
+        }
+
+        function abbreviateName(fullName) {
+            if (fullName.toUpperCase().includes('VACANT')) return '(VACANT)';
+            const parts = fullName.split(',');
+            if (parts.length < 2) { const sp = fullName.trim().split(/\s+/); if (sp.length >= 2) return `${sp[sp.length-1].toUpperCase().substring(0,4)}, ${sp[0].toUpperCase().substring(0,3)}`; return fullName.toUpperCase().substring(0,8); }
+            return `${parts[0].trim().toUpperCase().substring(0,4)}, ${parts[1].trim().toUpperCase().substring(0,3)}`;
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            const btnId = 'filter' + filter.charAt(0).toUpperCase() + filter.slice(1);
+            const btn = document.getElementById(btnId); if (btn) btn.classList.add('active');
+            renderTable();
+        }
+
+        function filterTable() { searchTerm = document.getElementById('searchBox').value.toLowerCase(); renderTable(); }
+
+        function renderTable() {
+            const tbody = document.getElementById('seniorityTableBody');
+            const ssomCount = seniorityData.filter(p => p.title === 'SSOM').length;
+            const somCount = seniorityData.filter(p => p.title === 'SOM' || p.title === 'SOM-QA').length;
+            const excludedCount = seniorityData.filter(p => !['SSOM', 'SOM', 'SOM-QA'].includes(p.title)).length;
+            const changedCount = seniorityData.filter(p => p.title !== p.originalTitle).length;
+            const newCount = seniorityData.filter(p => p.status === 'new').length;
+            
+            document.getElementById('countAll').textContent = seniorityData.length;
+            document.getElementById('countSSOM').textContent = ssomCount;
+            document.getElementById('countSOM').textContent = somCount;
+            document.getElementById('countNew').textContent = newCount;
+            document.getElementById('countExcluded').textContent = excludedCount;
+            document.getElementById('statTotal').textContent = seniorityData.length;
+            document.getElementById('statChanged').textContent = changedCount;
+            document.getElementById('statNew').textContent = newCount;
+            
+            let filteredData = seniorityData;
+            if (currentFilter === 'ssom') filteredData = filteredData.filter(p => p.title === 'SSOM');
+            else if (currentFilter === 'som') filteredData = filteredData.filter(p => p.title === 'SOM' || p.title === 'SOM-QA');
+            else if (currentFilter === 'new') filteredData = filteredData.filter(p => p.status === 'new');
+            else if (currentFilter === 'excluded') filteredData = filteredData.filter(p => !['SSOM', 'SOM', 'SOM-QA'].includes(p.title));
+            if (searchTerm) filteredData = filteredData.filter(p => p.fullName.toLowerCase().includes(searchTerm) || p.abbreviated.toLowerCase().includes(searchTerm));
+            document.getElementById('statShowing').textContent = filteredData.length;
+            
+            tbody.innerHTML = filteredData.map(person => {
+                const rowClass = person.status === 'new' ? 'new-row' : person.status === 'conflict' ? 'conflict-row' : person.title === 'SSOM' ? 'ssom-row' : (person.title === 'SOM' || person.title === 'SOM-QA') ? 'som-row' : '';
+                const selectClass = person.title !== person.originalTitle ? 'title-select changed' : 'title-select';
+                let groupBadge = person.title === 'SSOM' ? '<span class="group-badge group1">GROUP1</span>' : (person.title === 'SOM' || person.title === 'SOM-QA') ? '<span class="group-badge group2">GROUP2</span>' : '<span class="group-badge excluded">—</span>';
+                let statusBadge = person.status === 'new' ? '<span class="status-badge new">NEW</span>' : person.status === 'conflict' ? '<span class="status-badge conflict">⚠️</span>' : person.status === 'matched' ? '<span class="status-badge matched">✓</span>' : '';
+                return `<tr class="${rowClass} ${person.isVacancy ? 'vacancy-row' : ''}" id="row-${person.id}">
+                    <td>${person.seniorityNum}</td><td>${person.fullName}</td>
+                    <td><select class="${selectClass}" onchange="updateTitle(${person.id}, this.value)">
+                        <option value="SSOM" ${person.title === 'SSOM' ? 'selected' : ''}>SSOM</option>
+                        <option value="SOM" ${person.title === 'SOM' ? 'selected' : ''}>SOM</option>
+                        <option value="SOM-QA" ${person.title === 'SOM-QA' ? 'selected' : ''}>SOM-QA</option>
+                        <option value="FS" ${person.title === 'FS' ? 'selected' : ''}>FS</option>
+                        <option value="FS/LTD" ${person.title === 'FS/LTD' ? 'selected' : ''}>FS/LTD</option>
+                        <option value="FS-LOA" ${person.title === 'FS-LOA' ? 'selected' : ''}>FS-LOA</option>
+                        <option value="AFS" ${person.title === 'AFS' ? 'selected' : ''}>AFS</option>
+                        <option value="LCD" ${person.title === 'LCD' ? 'selected' : ''}>LCD</option>
+                        <option value="SAS" ${person.title === 'SAS' ? 'selected' : ''}>SAS</option>
+                        <option value="SFSI" ${person.title === 'SFSI' ? 'selected' : ''}>SFSI</option>
+                        <option value="SFSD" ${person.title === 'SFSD' ? 'selected' : ''}>SFSD</option>
+                        <option value="FSSI" ${person.title === 'FSSI' ? 'selected' : ''}>FSSI</option>
+                        <option value="FSCI" ${person.title === 'FSCI' ? 'selected' : ''}>FSCI</option>
+                        <option value="DD" ${person.title === 'DD' ? 'selected' : ''}>DD</option>
+                        <option value="MD" ${person.title === 'MD' ? 'selected' : ''}>MD</option>
+                        <option value="GM" ${person.title === 'GM' ? 'selected' : ''}>GM</option>
+                        <option value="GM-I" ${person.title === 'GM-I' ? 'selected' : ''}>GM-I</option>
+                        <option value="GM-D" ${person.title === 'GM-D' ? 'selected' : ''}>GM-D</option>
+                        <option value="GM-OM" ${person.title === 'GM-OM' ? 'selected' : ''}>GM-OM</option>
+                        <option value="DIR-FC" ${person.title === 'DIR-FC' ? 'selected' : ''}>DIR-FC</option>
+                        <option value="DIR-OM" ${person.title === 'DIR-OM' ? 'selected' : ''}>DIR-OM</option>
+                        <option value="DIR-OCCIT" ${person.title === 'DIR-OCCIT' ? 'selected' : ''}>DIR-OCCIT</option>
+                        <option value="RETIRED" ${person.title === 'RETIRED' ? 'selected' : ''}>RETIRED</option>
+                        <option value="VACANT" ${person.title === 'VACANT' ? 'selected' : ''}>VACANT</option>
+                    </select></td>
+                    <td class="abbreviated">${person.abbreviated}</td><td>${groupBadge}</td><td>${statusBadge}</td>
+                    <td>${person.isVacancy ? `<button class="btn btn-danger" style="padding:5px 10px; font-size:11px;" onclick="removeVacancy(${person.id})">Remove</button>` : ''}</td>
+                </tr>`;
+            }).join('');
+            updatePreview();
+        }
+
+        function updateTitle(id, newTitle) {
+            const person = seniorityData.find(p => p.id === id);
+            if (person) { person.title = newTitle; renderTable(); const row = document.getElementById('row-' + id); if (row) { row.classList.add('highlight'); setTimeout(() => row.classList.remove('highlight'), 2000); } }
+        }
+
+        function addVacancy(group) {
+            const title = group === 'ssom' ? 'SSOM' : 'SOM';
+            const newVacancy = { id: Date.now(), seniorityNum: 'V', fullName: '(VACANT)', originalTitle: title, title, abbreviated: '(VACANT)', isVacancy: true, status: 'new' };
+            const groupMembers = seniorityData.filter(p => p.title === title);
+            if (groupMembers.length > 0) { const lastIdx = seniorityData.findIndex(p => p.id === groupMembers[groupMembers.length - 1].id); seniorityData.splice(lastIdx + 1, 0, newVacancy); }
+            else seniorityData.push(newVacancy);
+            renderTable();
+        }
+
+        function removeVacancy(id) { seniorityData = seniorityData.filter(p => p.id !== id); renderTable(); }
+
+        function updatePreview() {
+            const ssomList = [], somList = []; let ssomNbr = 1, somNbr = 1;
+            seniorityData.forEach(person => {
+                if (person.title === 'SSOM') ssomList.push({ nbr: ssomNbr++, name: person.abbreviated });
+                else if (person.title === 'SOM' || person.title === 'SOM-QA') somList.push({ nbr: somNbr++, name: person.abbreviated });
+            });
+            document.getElementById('previewSSOMCount').textContent = ssomList.length;
+            document.getElementById('previewSOMCount').textContent = somList.length;
+            document.getElementById('previewSSOM').innerHTML = ssomList.map(p => `<div>${p.nbr}. ${p.name}</div>`).join('');
+            document.getElementById('previewSOM').innerHTML = somList.map(p => `<div>${p.nbr}. ${p.name}</div>`).join('');
+        }
+
+        function getCompiledLists() {
+            const ssomList = [], somList = []; let ssomNbr = 1, somNbr = 1;
+            seniorityData.forEach(person => {
+                if (person.title === 'SSOM') ssomList.push({ nbr: ssomNbr++, name: person.abbreviated });
+                else if (person.title === 'SOM' || person.title === 'SOM-QA') somList.push({ nbr: somNbr++, name: person.abbreviated });
+            });
+            return { ssomList, somList };
+        }
+
+        function downloadFile(content, filename, type) {
+            const blob = new Blob([content], { type }); const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        }
+
+        function saveWorkToFile() {
+            if (seniorityData.length === 0) { alert('No data to save.'); return; }
+            const saveData = { version: '1.0', savedAt: new Date().toISOString(), totalRecords: seniorityData.length, ssomCount: seniorityData.filter(p => p.title === 'SSOM').length, somCount: seniorityData.filter(p => p.title === 'SOM' || p.title === 'SOM-QA').length, data: seniorityData };
+            const date = new Date().toISOString().split('T')[0];
+            downloadFile(JSON.stringify(saveData, null, 2), `seniority_work_${date}.json`, 'application/json');
+            updateWorkflowStatus(5);
+            alert(`✅ Saved: seniority_work_${date}.json\n\nKeep this file on your computer (NOT GitHub).`);
+        }
+
+        async function publishToFirebase() {
+            const { ssomList, somList } = getCompiledLists();
+            
+            if (ssomList.length === 0 && somList.length === 0) {
+                alert('No SSOM or SOM members found. Cannot publish empty list.');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('publishStatus');
+            statusDiv.innerHTML = '<span style="color:#f39c12;">Step 1/3: Loading current data...</span>';
+            
+            try {
+                // Step 1: Load current seniority and assignments from Firebase
+                const [seniorityRes, bidRes] = await Promise.all([
+                    fetch('https://bid2026-58308-default-rtdb.firebaseio.com/seniority.json'),
+                    fetch('https://bid2026-58308-default-rtdb.firebaseio.com/bid.json')
+                ]);
+                
+                let oldGroup1 = [];
+                let oldGroup2 = [];
+                let currentAssignments = {};
+                let currentConfirmations = {};
+                let currentBidHistory = {};
+                let currentRollbackStack = [];
+                
+                if (seniorityRes.ok) {
+                    const senData = await seniorityRes.json();
+                    if (senData && senData.GROUP1) {
+                        oldGroup1 = senData.GROUP1;
+                        oldGroup2 = senData.GROUP2 || [];
+                    }
+                }
+                
+                // If no Firebase seniority, use the hardcoded fallback (current GitHub version)
+                if (oldGroup1.length === 0) {
+                    oldGroup1 = [{"nbr": 1, "name": "COST, BOB"}, {"nbr": 2, "name": "BRET, KEN"}, {"nbr": 3, "name": "ASTL, JOE"}, {"nbr": 4, "name": "PAWL, CHR"}, {"nbr": 5, "name": "BELF, VIN"}, {"nbr": 6, "name": "JOHN, BRI"}, {"nbr": 7, "name": "SMIT, DAV"}, {"nbr": 8, "name": "CAMP, KEV"}, {"nbr": 9, "name": "RECK, JAS"}, {"nbr": 10, "name": "DONA, JEF"}, {"nbr": 11, "name": "ADAM, MAR"}, {"nbr": 12, "name": "SCHA, DAV"}, {"nbr": 13, "name": "EMER, JES"}, {"nbr": 14, "name": "GRAF, BEN"}];
+                    oldGroup2 = [{"nbr": 1, "name": "BIRD, DAN"}, {"nbr": 2, "name": "FRAN, DAV"}, {"nbr": 3, "name": "CHAR, CAR"}, {"nbr": 4, "name": "SPRA, PER"}, {"nbr": 5, "name": "OLSE, ED"}, {"nbr": 6, "name": "HARR, JIM"}, {"nbr": 7, "name": "BAIL, RIC"}, {"nbr": 8, "name": "CLAR, JUD"}, {"nbr": 9, "name": "GWIN, BRI"}, {"nbr": 10, "name": "DANI, JEF"}, {"nbr": 11, "name": "SMIT, BAR"}, {"nbr": 12, "name": "RIEL, WAL"}, {"nbr": 13, "name": "ROHL, MIK"}, {"nbr": 14, "name": "HOUC, DAV"}, {"nbr": 15, "name": "STAN, LAN"}, {"nbr": 16, "name": "HOBS, MAR"}, {"nbr": 17, "name": "HOFF, DAN"}, {"nbr": 18, "name": "BAKE, ERI"}, {"nbr": 19, "name": "PUSZ, JIM"}, {"nbr": 20, "name": "HARA, DUD"}, {"nbr": 21, "name": "BATT, JAI"}, {"nbr": 22, "name": "SUCH, CHR"}, {"nbr": 23, "name": "(VACANT)"}, {"nbr": 24, "name": "HURL, JAC"}, {"nbr": 25, "name": "MCEL, KEV"}, {"nbr": 26, "name": "REED, MIK"}, {"nbr": 27, "name": "FUJI, ROX"}, {"nbr": 28, "name": "O'DO, BRI"}, {"nbr": 29, "name": "HAMI, ADA"}, {"nbr": 30, "name": "GEIG, GEO"}, {"nbr": 31, "name": "O'DO, WEN"}, {"nbr": 32, "name": "ESTE, KAT"}, {"nbr": 33, "name": "RINE, RAL"}, {"nbr": 34, "name": "ROMA, KEN"}, {"nbr": 35, "name": "HALL, CHA"}, {"nbr": 36, "name": "LONG, AND"}, {"nbr": 37, "name": "PAPP, ROB"}, {"nbr": 38, "name": "GAGN, JUL"}, {"nbr": 39, "name": "MALE, TOD"}, {"nbr": 40, "name": "MISN, HUO"}, {"nbr": 41, "name": "O'BR, DAV"}, {"nbr": 42, "name": "DELA, WIL"}, {"nbr": 43, "name": "BETC, MIC"}, {"nbr": 44, "name": "JOLL, DAV"}, {"nbr": 45, "name": "TOZZ, GIN"}, {"nbr": 46, "name": "MCMO, SHA"}, {"nbr": 47, "name": "RUCK, RIC"}, {"nbr": 48, "name": "WARN, DEE"}, {"nbr": 49, "name": "HENE, AND"}, {"nbr": 50, "name": "OSOJ, MER"}, {"nbr": 51, "name": "FOLE, RYA"}, {"nbr": 52, "name": "HILL, SEA"}, {"nbr": 53, "name": "MUGE, JEN"}, {"nbr": 54, "name": "DENM, JOH"}, {"nbr": 55, "name": "MAKI, RYA"}, {"nbr": 56, "name": "MCGR, DEA"}, {"nbr": 57, "name": "BRAD, LAT"}, {"nbr": 58, "name": "HATL, HER"}, {"nbr": 59, "name": "HAYE, JOH"}, {"nbr": 60, "name": "HARR, ELE"}, {"nbr": 61, "name": "PIOT, MAR"}, {"nbr": 62, "name": "CART, WES"}, {"nbr": 63, "name": "GAUL, PET"}, {"nbr": 64, "name": "BOST, GRE"}, {"nbr": 65, "name": "HINT, SEL"}, {"nbr": 66, "name": "TJAD, AND"}, {"nbr": 67, "name": "GEUR, STE"}, {"nbr": 68, "name": "KENT, AND"}, {"nbr": 69, "name": "SAMU, CHA"}, {"nbr": 70, "name": "CORN, DAN"}, {"nbr": 71, "name": "FATT, KEL"}, {"nbr": 72, "name": "STAR, JIM"}, {"nbr": 73, "name": "ALLE, JOS"}, {"nbr": 74, "name": "LATT, WIL"}, {"nbr": 75, "name": "TURI, LAU"}, {"nbr": 76, "name": "AUST, STE"}, {"nbr": 77, "name": "RAIN, MIK"}, {"nbr": 78, "name": "MILL, CRA"}, {"nbr": 79, "name": "LITT, CLA"}, {"nbr": 80, "name": "PIER, MAR"}, {"nbr": 81, "name": "HARN, ZAC"}];
+                }
+                
+                if (bidRes.ok) {
+                    const bidData = await bidRes.json();
+                    if (bidData) {
+                        currentAssignments = bidData.assignments || {};
+                        currentConfirmations = bidData.confirmations || {};
+                        currentBidHistory = bidData.bidHistory || {};
+                        currentRollbackStack = bidData.rollbackStack || [];
+                    }
+                }
+                
+                statusDiv.innerHTML = '<span style="color:#f39c12;">Step 2/3: Migrating assignments to follow people...</span>';
+                
+                // Step 2: Create name-to-line mapping from OLD positions
+                // e.g., if g2-24 = "64" and old position 24 was "HURL, JAC", then "HURL, JAC" had line 64
+                const nameToLine = {};
+                const nameToHistory = {};
+                const nameToConfirmation = {};
+                
+                for (const [key, lineNbr] of Object.entries(currentAssignments)) {
+                    const [prefix, nbrStr] = key.split('-');
+                    const nbr = parseInt(nbrStr);
+                    const oldGroup = prefix === 'g1' ? oldGroup1 : oldGroup2;
+                    const person = oldGroup.find(p => p.nbr === nbr);
+                    if (person && person.name) {
+                        nameToLine[person.name] = lineNbr;
+                    }
+                    // Also migrate history
+                    if (currentBidHistory[key]) {
+                        const personForHistory = oldGroup.find(p => p.nbr === nbr);
+                        if (personForHistory && personForHistory.name) {
+                            nameToHistory[personForHistory.name] = currentBidHistory[key];
+                        }
+                    }
+                    // Also migrate confirmations
+                    if (currentConfirmations[key]) {
+                        const personForConf = oldGroup.find(p => p.nbr === nbr);
+                        if (personForConf && personForConf.name) {
+                            nameToConfirmation[personForConf.name] = currentConfirmations[key];
+                        }
+                    }
+                }
+                
+                // Step 3: Create NEW assignments based on NEW positions
+                // Find each person in the NEW list and assign their line to their NEW position
+                const newAssignments = {};
+                const newBidHistory = {};
+                const newConfirmations = {};
+                let migratedCount = 0;
+                
+                // Process GROUP1 (SSOM)
+                for (const person of ssomList) {
+                    const newKey = `g1-${person.nbr}`;
+                    if (nameToLine[person.name]) {
+                        newAssignments[newKey] = nameToLine[person.name];
+                        migratedCount++;
+                    }
+                    if (nameToHistory[person.name]) {
+                        newBidHistory[newKey] = nameToHistory[person.name];
+                    }
+                    if (nameToConfirmation[person.name]) {
+                        newConfirmations[newKey] = nameToConfirmation[person.name];
+                    }
+                }
+                
+                // Process GROUP2 (SOM)
+                for (const person of somList) {
+                    const newKey = `g2-${person.nbr}`;
+                    if (nameToLine[person.name]) {
+                        newAssignments[newKey] = nameToLine[person.name];
+                        migratedCount++;
+                    }
+                    if (nameToHistory[person.name]) {
+                        newBidHistory[newKey] = nameToHistory[person.name];
+                    }
+                    if (nameToConfirmation[person.name]) {
+                        newConfirmations[newKey] = nameToConfirmation[person.name];
+                    }
+                }
+                
+                statusDiv.innerHTML = '<span style="color:#f39c12;">Step 3/3: Saving to Firebase...</span>';
+                
+                // Step 4: Save everything to Firebase
+                // Save new seniority
+                await fetch('https://bid2026-58308-default-rtdb.firebaseio.com/seniority.json', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        GROUP1: ssomList,
+                        GROUP2: somList,
+                        lastUpdated: new Date().toISOString(),
+                        ssomCount: ssomList.length,
+                        somCount: somList.length
+                    })
+                });
+                
+                // Save migrated bid data
+                await fetch('https://bid2026-58308-default-rtdb.firebaseio.com/bid.json', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        assignments: newAssignments,
+                        confirmations: newConfirmations,
+                        bidHistory: newBidHistory,
+                        rollbackStack: [], // Clear rollback stack since positions changed
+                        lastUpdated: new Date().toISOString(),
+                        migrationNote: `Seniority updated ${new Date().toISOString()} - assignments migrated by name`
+                    })
+                });
+                
+                statusDiv.innerHTML = `<span style="color:#2ecc71;">✅ Published successfully!</span><br>
+                    <span style="font-size:12px; color:#888;">
+                    <strong>Seniority:</strong> SSOM: ${ssomList.length} | SOM: ${somList.length}<br>
+                    <strong>Assignments migrated:</strong> ${migratedCount} lines followed their people<br>
+                    <strong>Confirmations:</strong> ${Object.keys(newConfirmations).length} preserved<br>
+                    <br>
+                    Refresh the bid app to see the changes.</span>`;
+                
+                updateWorkflowStatus(5);
+                
+            } catch (err) {
+                console.error('Failed to publish:', err);
+                statusDiv.innerHTML = `<span style="color:#e74c3c;">❌ Failed to publish: ${err.message}</span>`;
+            }
+        }
+
+        function downloadAllFiles() {
+            const { ssomList, somList } = getCompiledLists();
+            if (ssomList.length === 0 && somList.length === 0) { alert('No SSOM or SOM members found.'); return; }
+            const statusDiv = document.getElementById('downloadStatus');
+            statusDiv.innerHTML = '<span style="color:#f39c12;">Generating files...</span>';
+            const g1 = JSON.stringify(ssomList), g2 = JSON.stringify(somList), ts = new Date().toISOString();
+            
+            downloadFile(`// SENIORITY COMPILER - bidding_final.js Update\n// Generated: ${ts}\n// SSOM: ${ssomList.length} | SOM: ${somList.length}\n\n    const GROUP1 = ${g1};\n    const GROUP2 = ${g2};\n`, 'SENIORITY_bidding_final_UPDATE.js', 'text/javascript');
+            setTimeout(() => downloadFile(`<!-- SENIORITY COMPILER - bid_confirmation.html -->\n    const GROUP1 = ${g1};\n    const GROUP2 = ${g2};\n`, 'SENIORITY_bid_confirmation_UPDATE.html', 'text/html'), 300);
+            setTimeout(() => downloadFile(`<!-- SENIORITY COMPILER - bid_times.html -->\n    const GROUP1 = ${g1};\n    const GROUP2 = ${g2};\n`, 'SENIORITY_bid_times_UPDATE.html', 'text/html'), 600);
+            setTimeout(() => downloadFile(`<!-- SENIORITY COMPILER - swap_builder.html -->\n        var GROUP1 = ${g1};\n        var GROUP2 = ${g2};\n`, 'SENIORITY_swap_builder_UPDATE.html', 'text/html'), 900);
+            setTimeout(() => { statusDiv.innerHTML = '<span style="color:#4ecca3;">✓ 4 files downloaded! Copy GROUP1/GROUP2 into your GitHub files.</span>'; }, 1200);
+        }
+
+        function copyToClipboard() {
+            const { ssomList, somList } = getCompiledLists();
+            navigator.clipboard.writeText(`const GROUP1 = ${JSON.stringify(ssomList)};\nconst GROUP2 = ${JSON.stringify(somList)};`).then(() => alert('Copied to clipboard!'));
+        }
+
+        function skipToPublish() {
+            if (!hasPreviousData || previousData.length === 0) {
+                alert('Please load a JSON file first.');
+                return;
+            }
+            // Copy previousData to seniorityData
+            seniorityData = previousData.map(p => ({...p}));
+            // Skip straight to Step 3 and 4
+            document.getElementById('step3').classList.remove('hidden');
+            document.getElementById('step4').classList.remove('hidden');
+            renderTable();
+            renderPreview();
+            updateWorkflowStatus(4);
+        }
+
+        function clearAll() {
+            if (seniorityData.length > 0 && !confirm('Start over? This will clear all data.')) return;
+            seniorityData = []; previousData = []; hasPreviousData = false; changestoReview = [];
+            document.getElementById('seniorityPasteBox').value = '';
+            document.getElementById('loadedInfo').classList.add('hidden');
+            document.getElementById('pasteSection').classList.add('hidden');
+            document.getElementById('mergeSummary').classList.add('hidden');
+            document.getElementById('changesSection').classList.add('hidden');
+            document.getElementById('step3').classList.add('hidden');
+            document.getElementById('step4').classList.add('hidden');
+            updateWorkflowStatus(1);
+        }
+    </script>
+</body>
+</html>

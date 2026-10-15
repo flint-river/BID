@@ -1,0 +1,3097 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swap Builder - Polish Bid 2026-27</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #16213e 0%, #1a1a2e 100%);
+            padding: 15px 20px;
+            border-bottom: 2px solid #0f3460;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 { color: #e94560; font-size: 1.3em; }
+        .header p { color: #888; font-size: 12px; }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        /* Left Panel - Line Selection */
+        .selection-panel {
+            width: 320px;
+            background: #16213e;
+            border-right: 2px solid #0f3460;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        .panel-section {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .panel-section h3 {
+            color: #4ecca3;
+            font-size: 14px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .line-select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            background: #16213e;
+            color: #fff;
+            border: 1px solid #4ecca3;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .partner-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .partner-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: #16213e;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .partner-item .line-info {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+        
+        .partner-item .remove-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 8px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        .add-partner-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .add-partner-row select {
+            flex: 1;
+        }
+        
+        /* Stats Panel */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .stat-box {
+            background: #16213e;
+            padding: 12px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .stat-box .value {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .stat-box .label {
+            font-size: 10px;
+            color: #888;
+            margin-top: 3px;
+        }
+        
+        .stat-box.balanced .value { color: #4ecca3; }
+        .stat-box.over .value { color: #e94560; }
+        .stat-box.under .value { color: #f0a500; }
+        
+        .balance-indicator {
+            text-align: center;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        
+        .balance-indicator.balanced {
+            background: rgba(78, 204, 163, 0.2);
+            color: #4ecca3;
+        }
+        
+        .balance-indicator.over {
+            background: rgba(233, 69, 96, 0.2);
+            color: #e94560;
+        }
+        
+        .balance-indicator.under {
+            background: rgba(240, 165, 0, 0.2);
+            color: #f0a500;
+        }
+        
+        /* Right Panel - Calendar View */
+        .calendar-panel {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .calendar-header h2 {
+            color: #4ecca3;
+            font-size: 16px;
+        }
+        
+        .view-toggle {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .view-toggle .btn {
+            padding: 6px 12px;
+            background: #0f3460;
+            color: #888;
+        }
+        
+        .view-toggle .btn.active {
+            background: #4ecca3;
+            color: #1a1a2e;
+        }
+        
+        /* Month Grid */
+        .months-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+        
+        .month-block {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        
+        .month-title {
+            color: #e94560;
+            font-weight: bold;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        
+        .month-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 5px;
+        }
+        
+        .month-header span {
+            text-align: center;
+            font-size: 9px;
+            color: #888;
+        }
+        
+        .month-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+        
+        .day-cell {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            font-size: 8px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+        }
+        
+        .day-cell:hover {
+            transform: scale(1.1);
+            z-index: 10;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+        }
+        
+        .day-cell.empty {
+            background: transparent;
+            cursor: default;
+        }
+        
+        .day-cell.empty:hover {
+            transform: none;
+            box-shadow: none;
+        }
+        
+        .day-cell .day-num {
+            font-weight: bold;
+            font-size: 9px;
+        }
+        
+        .day-cell .shift-code {
+            font-size: 7px;
+            margin-top: 1px;
+        }
+        
+        .day-cell.work-day {
+            background: #FFC000;
+            color: #000;
+        }
+        
+        .day-cell.off-day {
+            background: #FFFFFF;
+            color: #000;
+        }
+        
+        .day-cell.swapped {
+            border: 2px solid #9b59b6;
+            box-shadow: 0 0 5px #9b59b6;
+        }
+        
+        .day-cell.swapped-in {
+            border: 2px solid #4ecca3;
+        }
+        
+        .day-cell.swapped-out {
+            border: 2px solid #2563eb;
+        }
+        
+        .day-cell.holiday {
+            border: 2px solid #e94560;
+        }
+        
+        /* Swap List View */
+        .swap-list {
+            background: #0f3460;
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .swap-list h3 {
+            color: #4ecca3;
+            margin-bottom: 15px;
+        }
+        
+        .swap-item {
+            display: grid;
+            grid-template-columns: 100px 1fr 80px 80px 60px;
+            gap: 10px;
+            align-items: center;
+            padding: 10px;
+            background: #16213e;
+            border-radius: 5px;
+            margin-bottom: 8px;
+        }
+        
+        .swap-item .date {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+        
+        .swap-item .description {
+            color: #ccc;
+            font-size: 12px;
+        }
+        
+        .swap-item .from-line {
+            color: #e94560;
+        }
+        
+        .swap-item .to-line {
+            color: #4ecca3;
+        }
+        
+        .swap-item .remove-btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 11px;
+        }
+        
+        /* Swap Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-overlay.show {
+            display: flex;
+        }
+        
+        .modal {
+            background: #16213e;
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal h3 {
+            color: #e94560;
+            margin-bottom: 15px;
+        }
+        
+        .modal-close {
+            float: right;
+            background: #e94560;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 15px;
+            cursor: pointer;
+        }
+        
+        .swap-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #0f3460;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .swap-option:hover {
+            background: #1a3a5c;
+            transform: translateX(5px);
+        }
+        
+        .swap-option .partner-info {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .swap-option .line-name {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+        
+        .swap-option .shift-info {
+            color: #888;
+            font-size: 11px;
+        }
+        
+        .swap-option .action-label {
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .swap-option.take .action-label {
+            background: #4ecca3;
+            color: #1a1a2e;
+        }
+        
+        .swap-option.give .action-label {
+            background: #e94560;
+            color: white;
+        }
+        
+        /* Partner Balances */
+        .partner-balances {
+            margin-top: 15px;
+        }
+        
+        .partner-balance-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #16213e;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .partner-balance-item .line-name {
+            color: #4ecca3;
+            font-weight: bold;
+        }
+        
+        .partner-balance-item .balance {
+            font-weight: bold;
+        }
+        
+        .partner-balance-item .balance.balanced { color: #4ecca3; }
+        .partner-balance-item .balance.over { color: #e94560; }
+        .partner-balance-item .balance.under { color: #f0a500; }
+        
+        /* Legend */
+        .legend {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            padding: 10px;
+            background: #0f3460;
+            border-radius: 5px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            color: #888;
+        }
+        
+        .legend-item .swatch {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+        
+        /* Export Section */
+        .export-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: #0f3460;
+            border-radius: 8px;
+        }
+        
+        .export-section h3 {
+            color: #4ecca3;
+            margin-bottom: 10px;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        /* No line selected state */
+        .no-line-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #888;
+        }
+        
+        .no-line-message .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        /* ============================================= */
+        /* DRAG AND DROP STYLES */
+        /* ============================================= */
+        
+        .drag-instructions {
+            background: linear-gradient(135deg, rgba(155, 89, 182, 0.2), rgba(78, 204, 163, 0.2));
+            border: 1px dashed #9b59b6;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .drag-instructions .icon {
+            font-size: 24px;
+        }
+        
+        .drag-instructions .text {
+            font-size: 12px;
+            color: #ccc;
+        }
+        
+        .drag-instructions .text strong {
+            color: #9b59b6;
+        }
+        
+        /* Draggable cells */
+        .shift-cell[draggable="true"] {
+            cursor: grab;
+            user-select: none;
+        }
+        
+        .shift-cell[draggable="true"]:active {
+            cursor: grabbing;
+        }
+        
+        .shift-cell.dragging {
+            opacity: 0.5;
+            transform: scale(0.95);
+            box-shadow: 0 0 10px rgba(155, 89, 182, 0.5);
+        }
+        
+        /* Drop zone highlighting */
+        .shift-cell.drop-target {
+            background: rgba(78, 204, 163, 0.3) !important;
+            border: 2px dashed #4ecca3 !important;
+            animation: pulse-drop 0.5s infinite alternate;
+        }
+        
+        .shift-cell.drop-invalid {
+            background: rgba(233, 69, 96, 0.3) !important;
+            border: 2px dashed #e94560 !important;
+        }
+        
+        @keyframes pulse-drop {
+            from { box-shadow: 0 0 5px rgba(78, 204, 163, 0.5); }
+            to { box-shadow: 0 0 15px rgba(78, 204, 163, 0.8); }
+        }
+        
+        /* Drag feedback toast */
+        .drag-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #16213e;
+            border: 2px solid #4ecca3;
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: bold;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        .drag-toast.show {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        .drag-toast.success {
+            border-color: #4ecca3;
+            color: #4ecca3;
+        }
+        
+        .drag-toast.error {
+            border-color: #e94560;
+            color: #e94560;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        /* Row highlighting during drag */
+        tr.drag-source-row {
+            background: rgba(155, 89, 182, 0.1) !important;
+        }
+        
+        tr.drag-target-row {
+            background: rgba(78, 204, 163, 0.1) !important;
+        }
+        
+        @media (max-width: 1200px) {
+            .months-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .main-container {
+                flex-direction: column;
+            }
+            .selection-panel {
+                width: 100%;
+                border-right: none;
+                border-bottom: 2px solid #0f3460;
+            }
+            .months-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>🔄 Swap Builder - Polish Bid 2026-27</h1>
+            <p>Build your custom schedule by swapping shifts with unlimited partners</p>
+        </div>
+        <div>
+            <a href="index.html" class="btn" style="background:#4ecca3; color:#1a1a2e; text-decoration:none;">← Back to Bid</a>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <!-- Left Panel -->
+        <div class="selection-panel">
+            <!-- Your Line Selection -->
+            <div class="panel-section">
+                <h3>📋 Your Line</h3>
+                <select id="myLineSelect" class="line-select" onchange="selectMyLine()">
+                    <option value="">-- Select Your Line --</option>
+                </select>
+                <div id="myLinePattern" style="display:none;">
+                    <div id="myLinePatternDisplay" style="display:flex; gap:2px; flex-wrap:wrap;"></div>
+                </div>
+            </div>
+            
+            <!-- Swap Partners -->
+            <div class="panel-section">
+                <h3>👥 Swap Partners <span style="color:#888; font-size:11px; font-weight:normal;">(unlimited)</span></h3>
+                <div class="add-partner-row">
+                    <select id="partnerSelect" class="line-select" style="margin-bottom:0;">
+                        <option value="">-- Add Partner --</option>
+                    </select>
+                    <button class="btn" style="background:#4ecca3; color:#1a1a2e;" onclick="addPartner()">+ Add</button>
+                </div>
+                <div id="partnerList" class="partner-list" style="margin-top:10px;"></div>
+            </div>
+            
+            <!-- Your Stats -->
+            <div class="panel-section">
+                <h3>📊 Your Work Days</h3>
+                <div class="stats-grid">
+                    <div class="stat-box" id="baseWorkDays">
+                        <div class="value">--</div>
+                        <div class="label">Base Days</div>
+                    </div>
+                    <div class="stat-box" id="currentWorkDays">
+                        <div class="value">--</div>
+                        <div class="label">After Swaps</div>
+                    </div>
+                    <div class="stat-box" id="swapsIn">
+                        <div class="value">0</div>
+                        <div class="label">Shifts Taken</div>
+                    </div>
+                    <div class="stat-box" id="swapsOut">
+                        <div class="value">0</div>
+                        <div class="label">Shifts Given</div>
+                    </div>
+                </div>
+                <div id="balanceIndicator" class="balance-indicator balanced" style="display:none;">
+                    ✓ BALANCED (152 days)
+                </div>
+            </div>
+            
+            <!-- Partner Balances -->
+            <div class="panel-section">
+                <h3>⚖️ All Lines Balance</h3>
+                <div id="partnerBalances" class="partner-balances">
+                    <p style="color:#888; font-size:12px;">Add partners to see their balances</p>
+                </div>
+            </div>
+            
+            <!-- Export -->
+            <div class="panel-section">
+                <h3>📤 Actions</h3>
+                <div class="export-buttons">
+                    <button class="btn" style="background:#e94560; color:white;" onclick="clearAllSwaps()">🗑️ Clear All</button>
+                </div>
+                <div class="export-buttons" style="margin-top:10px;">
+                    <button class="btn" style="background:#4ecca3; color:#1a1a2e;" onclick="exportSwappedICS()">📥 Export ICS</button>
+                    <button class="btn" style="background:#2563eb; color:white;" onclick="printSwapSummary()">📄 Print Summary</button>
+                </div>
+                <div class="export-buttons" style="margin-top:10px;">
+                    <button class="btn" style="background:#9b59b6; color:white;" onclick="saveSwaps()">💾 Save Swaps</button>
+                    <button class="btn" style="background:#f0a500; color:#1a1a2e;" onclick="document.getElementById('loadSwapsInput').click()">📂 Load Swaps</button>
+                    <input type="file" id="loadSwapsInput" accept=".json" style="display:none;" onchange="loadSwapsFromFile(event)">
+                </div>
+                <div class="export-buttons" style="margin-top:10px;">
+                    <button class="btn" style="background:#f0a500; color:#1a1a2e;" onclick="showPrintYearModal()">🖨️ Print Year Calendar</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Panel - Calendar -->
+        <div class="calendar-panel">
+            <div id="noLineMessage" class="no-line-message">
+                <div class="icon">📅</div>
+                <h3>Select Your Line to Begin</h3>
+                <p>Choose your line from the left panel to start building swaps</p>
+            </div>
+            
+            <div id="calendarContainer" style="display:none;">
+                <div class="calendar-header">
+                    <h2 id="calendarTitle">Your Schedule</h2>
+                    <div class="view-toggle">
+                        <button class="btn active" id="allLinesViewBtn" onclick="setView('allLines')">👥 All Lines (Drag & Drop)</button>
+                        <button class="btn" id="calViewBtn" onclick="setView('calendar')">📅 My Calendar</button>
+                        <button class="btn" id="listViewBtn" onclick="setView('list')">📋 Swap List</button>
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="swatch" style="background:#FFC000;"></div>
+                        <span>Work Day</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="swatch" style="background:#FFFFFF; border:1px solid #888;"></div>
+                        <span>Off Day</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="swatch" style="background:#FFC000; border:2px solid #4ecca3;"></div>
+                        <span>Shift Taken</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="swatch" style="background:#FFFFFF; border:2px solid #2563eb;"></div>
+                        <span>Shift Given</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="swatch" style="background:#FFC000; border:2px solid #e94560;"></div>
+                        <span>Holiday</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="swatch" style="background:#9b59b6;"></div>
+                        <span>Partner↔Partner</span>
+                    </div>
+                </div>
+                
+                <div id="calendarView" class="months-grid" style="display:none; margin-top:15px;"></div>
+                
+                <!-- All Lines Comparison View -->
+                <div id="allLinesView" style="margin-top:15px;">
+                    <div class="drag-instructions">
+                        <div class="icon">🖱️</div>
+                        <div class="text">
+                            <strong>Drag & Drop to Swap:</strong> Drag a shift (yellow cell) from ANY line and drop it on an OFF day (white cell) of another line on the same date. Partners can swap with each other!
+                        </div>
+                    </div>
+                    <div style="text-align:center; margin-bottom:15px;">
+                        <button class="btn" id="undoBtn" style="background:#f0a500; color:#1a1a2e; padding:10px 24px; font-size:14px;" onclick="undoLastSwap()" disabled>↩️ Undo (<span id="undoCount">0</span>)</button>
+                        <span style="color:#666; font-size:11px; margin-left:10px;">Ctrl+Z</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+                        <div style="display:flex; gap:10px; align-items:center;">
+                            <button class="btn" onclick="prevMonth()" style="background:#0f3460; color:#4ecca3;">◀ Prev</button>
+                            <h3 id="allLinesMonthTitle" style="color:#e94560; margin:0; min-width:150px; text-align:center;">April 2026</h3>
+                            <button class="btn" onclick="nextMonth()" style="background:#0f3460; color:#4ecca3;">Next ▶</button>
+                        </div>
+                        <div style="color:#888; font-size:12px;">Drag shifts between lines or click cells to swap</div>
+                    </div>
+                    <div id="allLinesContent" style="background:#0f3460; border-radius:8px; padding:15px; overflow-x:auto;"></div>
+                </div>
+                
+                <div id="listView" class="swap-list" style="display:none; margin-top:15px;">
+                    <h3>Swap List</h3>
+                    <div id="swapListContent">
+                        <p style="color:#888;">No swaps yet. Click on days in the calendar to create swaps.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Swap Modal -->
+    <div class="modal-overlay" id="swapModal" onclick="hideSwapModal()">
+        <div class="modal" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="hideSwapModal()">Close</button>
+            <h3 id="swapModalTitle">Swap Options</h3>
+            <p id="swapModalDate" style="color:#888; margin-bottom:15px;"></p>
+            
+            <div id="swapModalContent"></div>
+        </div>
+    </div>
+    
+    <!-- Print Year Calendar Modal -->
+    <div class="modal-overlay" id="printYearModal" onclick="hidePrintYearModal()">
+        <div class="modal" style="max-width:500px;" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="hidePrintYearModal()">Close</button>
+            <h3>🖨️ Print Year Calendar</h3>
+            <p style="color:#888; font-size:12px; margin-bottom:15px;">
+                Print full-year calendars to discuss swaps with your partners. Each selected line prints on its own page.
+            </p>
+            
+            <div style="background:#0f3460; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4 style="color:#4ecca3; margin-bottom:10px;">Select Lines to Print</h4>
+                <div id="printLineSelections"></div>
+            </div>
+            
+            <div style="background:#0f3460; padding:15px; border-radius:8px; margin-bottom:15px;">
+                <h4 style="color:#4ecca3; margin-bottom:10px;">Print Options</h4>
+                <label style="display:flex; align-items:center; gap:10px; color:#ccc; margin-bottom:10px; cursor:pointer;">
+                    <input type="checkbox" id="printShowSwaps" checked style="width:18px; height:18px;">
+                    <span>Highlight swapped days</span>
+                </label>
+                <label style="display:flex; align-items:center; gap:10px; color:#ccc; cursor:pointer;">
+                    <input type="checkbox" id="printTraditionalView" style="width:18px; height:18px;">
+                    <span>Use traditional (horizontal) view</span>
+                </label>
+            </div>
+            
+            <div style="display:flex; gap:10px; justify-content:flex-end;">
+                <button class="btn" onclick="hidePrintYearModal()" style="background:#888; color:white;">Cancel</button>
+                <button class="btn" onclick="printSelectedYearCalendars()" style="background:#f0a500; color:#1a1a2e;">🖨️ Print Selected</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Drag Toast -->
+    <div class="drag-toast" id="dragToast"></div>
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDD7V8bTZK8q7ADvR7rx56n9UDZs5O7PjU",
+      authDomain: "bid2026-58308.firebaseapp.com",
+      databaseURL: "https://bid2026-58308-default-rtdb.firebaseio.com",
+      projectId: "bid2026-58308",
+      storageBucket: "bid2026-58308.firebasestorage.app",
+      messagingSenderId: "312871238158",
+      appId: "1:312871238158:web:b880eea86e983d1dac9a5f"
+    };
+    firebase.initializeApp(firebaseConfig);
+    </script>
+    
+    <!-- Load data files -->
+    <script src="BID_CONFIG.js"></script>
+    <script src="may_overrides.js"></script>
+    <script src="pattern_loader.js"></script>
+    <script src="calendar_generator.js"></script>
+
+    <script>
+        // State
+        var myLine = null;
+        // ANNUAL_BID will be loaded dynamically
+        var partners = [];
+        var swaps = []; // { date: 'YYYY-M-D', fromLine: '1', toLine: '5', shift: 'E05A' }
+        var currentView = 'allLines';
+        var currentMonthIndex = 0; // 0 = April of bid year, 11 = March of following year
+        
+        // Undo stack - stores actions that can be undone
+        var undoStack = []; // { action: 'add'|'remove', swap: {...} }
+        var MAX_UNDO = 50;
+        
+        // Drag state
+        var dragData = null;
+        
+        // Assignments from Firebase
+        var assignments = {};
+        
+        // Group data for name lookups - loaded from Firebase
+        var GROUP1 = [];
+        var GROUP2 = [];
+        
+        // FALLBACK: Exact copy of current seniority
+        var GROUP1_FALLBACK = [{"nbr": 1, "name": "COST, BOB"}, {"nbr": 2, "name": "BRET, KEN"}, {"nbr": 3, "name": "ASTL, JOE"}, {"nbr": 4, "name": "PAWL, CHR"}, {"nbr": 5, "name": "BELF, VIN"}, {"nbr": 6, "name": "JOHN, BRI"}, {"nbr": 7, "name": "SMIT, DAV"}, {"nbr": 8, "name": "CAMP, KEV"}, {"nbr": 9, "name": "RECK, JAS"}, {"nbr": 10, "name": "DONA, JEF"}, {"nbr": 11, "name": "ADAM, MAR"}, {"nbr": 12, "name": "SCHA, DAV"}, {"nbr": 13, "name": "EMER, JES"}, {"nbr": 14, "name": "GRAF, BEN"}];
+        var GROUP2_FALLBACK = [{"nbr": 1, "name": "BIRD, DAN"}, {"nbr": 2, "name": "FRAN, DAV"}, {"nbr": 3, "name": "CHAR, CAR"}, {"nbr": 4, "name": "SPRA, PER"}, {"nbr": 5, "name": "OLSE, ED"}, {"nbr": 6, "name": "HARR, JIM"}, {"nbr": 7, "name": "BAIL, RIC"}, {"nbr": 8, "name": "CLAR, JUD"}, {"nbr": 9, "name": "GWIN, BRI"}, {"nbr": 10, "name": "DANI, JEF"}, {"nbr": 11, "name": "SMIT, BAR"}, {"nbr": 12, "name": "RIEL, WAL"}, {"nbr": 13, "name": "ROHL, MIK"}, {"nbr": 14, "name": "HOUC, DAV"}, {"nbr": 15, "name": "STAN, LAN"}, {"nbr": 16, "name": "HOBS, MAR"}, {"nbr": 17, "name": "HOFF, DAN"}, {"nbr": 18, "name": "BAKE, ERI"}, {"nbr": 19, "name": "PUSZ, JIM"}, {"nbr": 20, "name": "HARA, DUD"}, {"nbr": 21, "name": "BATT, JAI"}, {"nbr": 22, "name": "SUCH, CHR"}, {"nbr": 23, "name": "(VACANT)"}, {"nbr": 24, "name": "HURL, JAC"}, {"nbr": 25, "name": "MCEL, KEV"}, {"nbr": 26, "name": "REED, MIK"}, {"nbr": 27, "name": "FUJI, ROX"}, {"nbr": 28, "name": "O'DO, BRI"}, {"nbr": 29, "name": "HAMI, ADA"}, {"nbr": 30, "name": "GEIG, GEO"}, {"nbr": 31, "name": "O'DO, WEN"}, {"nbr": 32, "name": "ESTE, KAT"}, {"nbr": 33, "name": "RINE, RAL"}, {"nbr": 34, "name": "ROMA, KEN"}, {"nbr": 35, "name": "HALL, CHA"}, {"nbr": 36, "name": "LONG, AND"}, {"nbr": 37, "name": "PAPP, ROB"}, {"nbr": 38, "name": "GAGN, JUL"}, {"nbr": 39, "name": "MALE, TOD"}, {"nbr": 40, "name": "MISN, HUO"}, {"nbr": 41, "name": "O'BR, DAV"}, {"nbr": 42, "name": "DELA, WIL"}, {"nbr": 43, "name": "BETC, MIC"}, {"nbr": 44, "name": "JOLL, DAV"}, {"nbr": 45, "name": "TOZZ, GIN"}, {"nbr": 46, "name": "MCMO, SHA"}, {"nbr": 47, "name": "RUCK, RIC"}, {"nbr": 48, "name": "WARN, DEE"}, {"nbr": 49, "name": "HENE, AND"}, {"nbr": 50, "name": "OSOJ, MER"}, {"nbr": 51, "name": "FOLE, RYA"}, {"nbr": 52, "name": "HILL, SEA"}, {"nbr": 53, "name": "MUGE, JEN"}, {"nbr": 54, "name": "DENM, JOH"}, {"nbr": 55, "name": "MAKI, RYA"}, {"nbr": 56, "name": "MCGR, DEA"}, {"nbr": 57, "name": "BRAD, LAT"}, {"nbr": 58, "name": "HATL, HER"}, {"nbr": 59, "name": "HAYE, JOH"}, {"nbr": 60, "name": "HARR, ELE"}, {"nbr": 61, "name": "PIOT, MAR"}, {"nbr": 62, "name": "CART, WES"}, {"nbr": 63, "name": "GAUL, PET"}, {"nbr": 64, "name": "BOST, GRE"}, {"nbr": 65, "name": "HINT, SEL"}, {"nbr": 66, "name": "TJAD, AND"}, {"nbr": 67, "name": "GEUR, STE"}, {"nbr": 68, "name": "KENT, AND"}, {"nbr": 69, "name": "SAMU, CHA"}, {"nbr": 70, "name": "CORN, DAN"}, {"nbr": 71, "name": "FATT, KEL"}, {"nbr": 72, "name": "STAR, JIM"}, {"nbr": 73, "name": "ALLE, JOS"}, {"nbr": 74, "name": "LATT, WIL"}, {"nbr": 75, "name": "TURI, LAU"}, {"nbr": 76, "name": "AUST, STE"}, {"nbr": 77, "name": "RAIN, MIK"}, {"nbr": 78, "name": "MILL, CRA"}, {"nbr": 79, "name": "LITT, CLA"}, {"nbr": 80, "name": "PIER, MAR"}, {"nbr": 81, "name": "HARN, ZAC"}];
+        
+        // Load seniority from Firebase
+        function loadSeniorityLists() {
+            var FIREBASE_URL = 'https://bid2026-58308-default-rtdb.firebaseio.com';
+            return fetch(FIREBASE_URL + '/seniority.json')
+                .then(function(response) { return response.json(); })
+                .then(function(data) {
+                    if (data && data.GROUP1 && data.GROUP1.length > 0) {
+                        GROUP1 = data.GROUP1;
+                        GROUP2 = data.GROUP2 || [];
+                        console.log('Loaded seniority from Firebase: SSOM=' + GROUP1.length + ', SOM=' + GROUP2.length);
+                    } else {
+                        GROUP1 = GROUP1_FALLBACK;
+                        GROUP2 = GROUP2_FALLBACK;
+                    }
+                })
+                .catch(function(err) {
+                    console.error('Failed to load seniority:', err);
+                    GROUP1 = GROUP1_FALLBACK;
+                    GROUP2 = GROUP2_FALLBACK;
+                });
+        }
+        
+        // Get name from assignment key (e.g., "g2-1" -> "BIRD, DAN")
+        function getNameFromKey(key) {
+            var parts = key.split('-');
+            var prefix = parts[0];
+            var nbr = parseInt(parts[1]);
+            var group = prefix === 'g1' ? GROUP1 : GROUP2;
+            var person = group.find(function(p) { return p.nbr === nbr; });
+            return person ? person.name : '';
+        }
+        
+        // Get who is assigned to a line (reverse lookup)
+        function getAssignedName(lineNbr) {
+            var lineStr = String(lineNbr);
+            for (var key in assignments) {
+                if (String(assignments[key]) === lineStr) {
+                    return getNameFromKey(key);
+                }
+            }
+            return '';
+        }
+
+        // Get display number from composite key (e.g., "5-SSOM" -> "5")
+        function getDisplayNumber(lineNbr) {
+            if (!lineNbr) return '';
+            if (typeof PatternLoader !== 'undefined' && PatternLoader.parseCompositeKey) {
+                var parsed = PatternLoader.parseCompositeKey(lineNbr);
+                return parsed.number;
+            }
+            // Fallback: try to extract number from composite key format
+            var str = String(lineNbr);
+            var match = str.match(/^(\d+)-/);
+            if (match) return match[1];
+            return str;
+        }
+
+        // Load assignments from Firebase (using REST API like main page)
+        function loadAssignments() {
+            var FIREBASE_URL = 'https://bid2026-58308-default-rtdb.firebaseio.com';
+            fetch(FIREBASE_URL + '/bid.json')
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    if (data && data.assignments) {
+                        assignments = data.assignments;
+                        console.log('Loaded assignments:', Object.keys(assignments).length);
+                        // Refresh dropdowns with names
+                        refreshDropdownsWithNames();
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error loading assignments:', error);
+                });
+        }
+        
+        function refreshDropdownsWithNames() {
+            var mySelect = document.getElementById('myLineSelect');
+            var partnerSelect = document.getElementById('partnerSelect');
+            
+            // Update all options with names
+            for (var i = 1; i < mySelect.options.length; i++) {
+                var lineNbr = mySelect.options[i].value;
+                var displayNum = getDisplayNumber(lineNbr);
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === lineNbr; });
+                var assignedName = getAssignedName(lineNbr);
+                var nameDisplay = assignedName ? ' - ' + assignedName : '';
+                mySelect.options[i].textContent = 'Line ' + displayNum + ' (' + (lineData ? lineData.lineDesc : '') + ')' + nameDisplay;
+            }
+
+            for (var i = 1; i < partnerSelect.options.length; i++) {
+                var lineNbr = partnerSelect.options[i].value;
+                var displayNum = getDisplayNumber(lineNbr);
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === lineNbr; });
+                var assignedName = getAssignedName(lineNbr);
+                var nameDisplay = assignedName ? ' - ' + assignedName : '';
+                partnerSelect.options[i].textContent = 'Line ' + displayNum + ' (' + (lineData ? lineData.lineDesc : '') + ')' + nameDisplay;
+            }
+            
+            // Also refresh partner list if any partners added
+            renderPartnerList();
+            
+            // Update calendar title if line is selected
+            if (myLine) {
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === myLine; });
+                if (lineData) {
+                    var assignedName = getAssignedName(myLine);
+                    var nameDisplay = assignedName ? ' - ' + assignedName : '';
+                    document.getElementById('calendarTitle').textContent = 'Line ' + myLine + ' (' + lineData.lineDesc + ')' + nameDisplay;
+                }
+            }
+        }
+        
+        // Generate MONTHS array dynamically based on bid year
+        function generateMonthsArray() {
+            if (typeof BID_CONFIG !== 'undefined') {
+                return BID_CONFIG.getMonthsArray();
+            }
+            // Fallback to 2026
+            var bidYear = 2026;
+            var months = [];
+            var monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                             'July', 'August', 'September', 'October', 'November', 'December'];
+            // April through December of bid year
+            for (var m = 3; m <= 11; m++) {
+                months.push({ name: monthNames[m] + ' ' + bidYear, year: bidYear, month: m });
+            }
+            // January through March of following year
+            for (var m = 0; m <= 2; m++) {
+                months.push({ name: monthNames[m] + ' ' + (bidYear + 1), year: bidYear + 1, month: m });
+            }
+            return months;
+        }
+        var MONTHS = generateMonthsArray();
+
+        // Use holidays from global HOLIDAYS if available (from BidYearIntegration)
+        // Otherwise use empty object - holidays should be loaded by main app
+        var HOLIDAYS = (typeof window.HOLIDAYS !== 'undefined') ? window.HOLIDAYS : {};
+        
+        // =====================================================
+        // DRAG AND DROP FUNCTIONS
+        // =====================================================
+        
+        function showToast(message, type) {
+            var toast = document.getElementById('dragToast');
+            toast.textContent = message;
+            toast.className = 'drag-toast show ' + type;
+            
+            setTimeout(function() {
+                toast.classList.remove('show');
+            }, 2500);
+        }
+        
+        function handleDragStart(e) {
+            var cell = e.target;
+            var lineNbr = cell.dataset.line;
+            var dateKey = cell.dataset.date;
+            var shift = cell.dataset.shift;
+            
+            if (!shift || shift === '--') {
+                e.preventDefault();
+                return;
+            }
+            
+            dragData = {
+                fromLine: lineNbr,
+                dateKey: dateKey,
+                shift: shift
+            };
+            
+            cell.classList.add('dragging');
+            
+            // Highlight the source row
+            var row = cell.closest('tr');
+            if (row) row.classList.add('drag-source-row');
+            
+            // Set drag image
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', JSON.stringify(dragData));
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            
+            // Remove all highlights
+            document.querySelectorAll('.drag-source-row').forEach(function(el) {
+                el.classList.remove('drag-source-row');
+            });
+            document.querySelectorAll('.drag-target-row').forEach(function(el) {
+                el.classList.remove('drag-target-row');
+            });
+            document.querySelectorAll('.drop-target').forEach(function(el) {
+                el.classList.remove('drop-target');
+            });
+            document.querySelectorAll('.drop-invalid').forEach(function(el) {
+                el.classList.remove('drop-invalid');
+            });
+            
+            dragData = null;
+        }
+        
+        function handleDragOver(e) {
+            e.preventDefault();
+            
+            var cell = e.target.closest('.shift-cell');
+            if (!cell || !dragData) return;
+            
+            var targetLine = cell.dataset.line;
+            var targetDate = cell.dataset.date;
+            var targetShift = cell.dataset.shift;
+            
+            // Must be same date
+            if (targetDate !== dragData.dateKey) {
+                e.dataTransfer.dropEffect = 'none';
+                return;
+            }
+            
+            // Must be different line
+            if (targetLine === dragData.fromLine) {
+                e.dataTransfer.dropEffect = 'none';
+                return;
+            }
+            
+            // Check if valid drop (one working, one off)
+            var fromIsWorking = dragData.shift && dragData.shift !== '--';
+            var toIsOff = !targetShift || targetShift === '--';
+            
+            if (fromIsWorking && toIsOff) {
+                e.dataTransfer.dropEffect = 'move';
+                cell.classList.add('drop-target');
+                cell.classList.remove('drop-invalid');
+                
+                var row = cell.closest('tr');
+                if (row) row.classList.add('drag-target-row');
+            } else {
+                e.dataTransfer.dropEffect = 'none';
+                cell.classList.add('drop-invalid');
+                cell.classList.remove('drop-target');
+            }
+        }
+        
+        function handleDragLeave(e) {
+            var cell = e.target.closest('.shift-cell');
+            if (cell) {
+                cell.classList.remove('drop-target');
+                cell.classList.remove('drop-invalid');
+            }
+            
+            var row = e.target.closest('tr');
+            if (row) row.classList.remove('drag-target-row');
+        }
+        
+        function handleDrop(e) {
+            e.preventDefault();
+            
+            var cell = e.target.closest('.shift-cell');
+            if (!cell || !dragData) return;
+            
+            var targetLine = cell.dataset.line;
+            var targetDate = cell.dataset.date;
+            var targetShift = cell.dataset.shift;
+            
+            // Validate: same date, different line
+            if (targetDate !== dragData.dateKey) {
+                showToast('❌ Must drop on the same date!', 'error');
+                return;
+            }
+            
+            if (targetLine === dragData.fromLine) {
+                showToast('❌ Cannot drop on your own line!', 'error');
+                return;
+            }
+            
+            // Validate: one working, one off
+            var fromIsWorking = dragData.shift && dragData.shift !== '--';
+            var toIsOff = !targetShift || targetShift === '--';
+            
+            if (!fromIsWorking || !toIsOff) {
+                showToast('❌ Can only swap between work day and off day!', 'error');
+                return;
+            }
+            
+            // Check if partner already has swap on this date
+            if (partnerHasSwapOnDate(dragData.fromLine, targetDate) || partnerHasSwapOnDate(targetLine, targetDate)) {
+                showToast('❌ One of these lines already has a swap on this date!', 'error');
+                return;
+            }
+            
+            // Check 8-hour rest for the receiving line
+            var restCheck = check8HourRest(targetLine, targetDate, dragData.shift);
+            if (!restCheck.valid) {
+                showToast('❌ 8hr Rest Violation: ' + restCheck.reason, 'error');
+                return;
+            }
+            
+            // All validations passed! Create the swap
+            var newSwap = {
+                date: targetDate,
+                fromLine: dragData.fromLine,
+                toLine: targetLine,
+                shift: dragData.shift
+            };
+            
+            swaps.push(newSwap);
+            
+            // Add to undo stack
+            undoStack.push({ action: 'add', swap: newSwap });
+            if (undoStack.length > MAX_UNDO) undoStack.shift();
+            updateUndoButton();
+            
+            showToast('✓ Swap created: ' + dragData.shift + ' from Line ' + dragData.fromLine + ' → Line ' + targetLine, 'success');
+            
+            // Update views
+            renderAllLinesView();
+            renderCalendar();
+            updateStats();
+            updatePartnerBalances();
+            autoSave();
+        }
+        
+        // =====================================================
+        // VALIDATION HELPER FUNCTIONS
+        // =====================================================
+        
+        function getShiftStartHour(shiftCode) {
+            if (!shiftCode || shiftCode === '--') return null;
+            var hour = parseInt(shiftCode.substring(1, 3), 10);
+            return isNaN(hour) ? 6 : hour;
+        }
+        
+        function getShiftEndHour(shiftCode) {
+            var start = getShiftStartHour(shiftCode);
+            if (start === null) return null;
+            return (start + 12) % 24;
+        }
+        
+        function isOvernightShift(shiftCode) {
+            var start = getShiftStartHour(shiftCode);
+            var end = getShiftEndHour(shiftCode);
+            if (start === null || end === null) return false;
+            return start > end || end === 0;
+        }
+        
+        function getAdjacentDate(dateKey, offset) {
+            var parts = dateKey.split('-');
+            var date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            date.setDate(date.getDate() + offset);
+            return date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate();
+        }
+        
+        // Check 8-hour rest rule for a line taking a new shift on a specific date
+        function check8HourRest(lineNbr, dateKey, newShiftCode) {
+            var newStart = getShiftStartHour(newShiftCode);
+            if (newStart === null) return { valid: true };
+            
+            var newEnd = getShiftEndHour(newShiftCode);
+            var newIsOvernight = isOvernightShift(newShiftCode);
+            
+            // CHECK 1: Previous day's shift -> New shift
+            var prevDateKey = getAdjacentDate(dateKey, -1);
+            var prevShift = getEffectiveShiftForLine(lineNbr, prevDateKey);
+            if (prevShift && prevShift !== '--') {
+                var prevStart = getShiftStartHour(prevShift);
+                var prevEnd = getShiftEndHour(prevShift);
+                var prevIsOvernight = isOvernightShift(prevShift);
+                
+                var restHours;
+                
+                if (prevIsOvernight) {
+                    if (newStart >= prevEnd) {
+                        restHours = newStart - prevEnd;
+                    } else {
+                        restHours = 0;
+                    }
+                } else {
+                    restHours = (24 - prevEnd) + newStart;
+                }
+                
+                if (restHours < 8) {
+                    return { 
+                        valid: false, 
+                        reason: 'Only ' + restHours + 'h rest after previous shift (' + prevShift + ' ends at ' + String(prevEnd).padStart(2,'0') + ':00' + (prevIsOvernight ? ' next morning' : '') + ')'
+                    };
+                }
+            }
+            
+            // CHECK 2: New shift -> Next day's shift
+            var nextDateKey = getAdjacentDate(dateKey, 1);
+            var nextShift = getEffectiveShiftForLine(lineNbr, nextDateKey);
+            if (nextShift && nextShift !== '--') {
+                var nextStart = getShiftStartHour(nextShift);
+                
+                var restHours;
+                
+                if (newIsOvernight) {
+                    if (nextStart >= newEnd) {
+                        restHours = nextStart - newEnd;
+                    } else {
+                        restHours = 0;
+                    }
+                } else {
+                    restHours = (24 - newEnd) + nextStart;
+                }
+                
+                if (restHours < 8) {
+                    return { 
+                        valid: false, 
+                        reason: 'Only ' + restHours + 'h rest before next shift (' + nextShift + ' starts at ' + String(nextStart).padStart(2,'0') + ':00)'
+                    };
+                }
+            }
+            
+            return { valid: true };
+        }
+        
+        // Get effective shift for any line (considering swaps)
+        function getEffectiveShiftForLine(lineNbr, dateKey) {
+            var calendar = ALL_LINES_CALENDAR[lineNbr];
+            if (!calendar || !calendar.days[dateKey]) return '--';
+            
+            var baseShift = calendar.days[dateKey].s;
+            
+            // Check if this day has been swapped for this line
+            for (var i = 0; i < swaps.length; i++) {
+                var swap = swaps[i];
+                if (swap.date === dateKey) {
+                    if (swap.fromLine === lineNbr) {
+                        return '--';
+                    } else if (swap.toLine === lineNbr) {
+                        return swap.shift;
+                    }
+                }
+            }
+            
+            return baseShift;
+        }
+        
+        // Check if partner already has a swap on this date
+        function partnerHasSwapOnDate(partnerLine, dateKey) {
+            for (var i = 0; i < swaps.length; i++) {
+                var swap = swaps[i];
+                if (swap.date === dateKey && (swap.fromLine === partnerLine || swap.toLine === partnerLine)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // =====================================================
+        // INITIALIZATION
+        // =====================================================
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Update page title and header with dynamic year
+            var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
+            var bidYearDisplay = bidYear + '-' + String(bidYear + 1).slice(-2);
+            document.title = 'Swap Builder - Polish Bid ' + bidYearDisplay;
+            var headerH1 = document.querySelector('.header h1');
+            if (headerH1) {
+                headerH1.textContent = '🔄 Swap Builder - Polish Bid ' + bidYearDisplay;
+            }
+
+            // Load patterns first
+            if (typeof PatternLoader !== 'undefined') {
+                try {
+                    await PatternLoader.load('patterns.json');
+                    console.log('[SwapBuilder] Loaded ' + ANNUAL_BID.length + ' lines from patterns.json');
+                } catch (err) {
+                    console.error('[SwapBuilder] Failed to load patterns:', err);
+                }
+            }
+
+            // Load seniority then initialize
+            loadSeniorityLists().then(function() {
+                populateLineSelects();
+                loadSavedSwaps();
+                loadAssignments();
+            });
+            
+            // Keyboard shortcut for undo (Ctrl+Z)
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+                    e.preventDefault();
+                    undoLastSwap();
+                }
+            });
+        });
+        
+        function populateLineSelects() {
+            var mySelect = document.getElementById('myLineSelect');
+            var partnerSelect = document.getElementById('partnerSelect');
+            
+            ANNUAL_BID.forEach(function(line) {
+                var displayNum = getDisplayNumber(line.lineNbr);
+                var opt1 = document.createElement('option');
+                opt1.value = line.lineNbr;
+                opt1.textContent = 'Line ' + displayNum + ' (' + line.lineDesc + ')';
+                mySelect.appendChild(opt1);
+
+                var opt2 = document.createElement('option');
+                opt2.value = line.lineNbr;
+                opt2.textContent = 'Line ' + displayNum + ' (' + line.lineDesc + ')';
+                partnerSelect.appendChild(opt2);
+            });
+        }
+        
+        function selectMyLine() {
+            var select = document.getElementById('myLineSelect');
+            myLine = select.value;
+            
+            if (myLine) {
+                document.getElementById('noLineMessage').style.display = 'none';
+                document.getElementById('calendarContainer').style.display = 'block';
+                document.getElementById('myLinePattern').style.display = 'block';
+                
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === myLine; });
+                if (lineData) {
+                    var patternHtml = '';
+                    for (var i = 0; i < 12; i++) {
+                        var bg = lineData.days[i] === '--' ? '#FFFFFF' : '#FFC000';
+                        var color = '#000';
+                        patternHtml += '<div style="width:28px; height:22px; background:' + bg + '; color:' + color + '; display:flex; align-items:center; justify-content:center; border-radius:3px; font-size:8px; font-weight:bold;">' + lineData.days[i] + '</div>';
+                    }
+                    document.getElementById('myLinePatternDisplay').innerHTML = patternHtml;
+                    var assignedName = getAssignedName(myLine);
+                    var nameDisplay = assignedName ? ' - ' + assignedName : '';
+                    document.getElementById('calendarTitle').textContent = 'Line ' + myLine + ' (' + lineData.lineDesc + ')' + nameDisplay;
+                }
+                
+                renderCalendar();
+                renderAllLinesView();
+                updateStats();
+            } else {
+                document.getElementById('noLineMessage').style.display = 'flex';
+                document.getElementById('calendarContainer').style.display = 'none';
+                document.getElementById('myLinePattern').style.display = 'none';
+            }
+        }
+        
+        function addPartner() {
+            var select = document.getElementById('partnerSelect');
+            var lineNbr = select.value;
+            
+            if (!lineNbr) {
+                alert('Please select a line to add as partner');
+                return;
+            }
+            
+            if (lineNbr === myLine) {
+                alert('Cannot add your own line as a partner');
+                return;
+            }
+            
+            if (partners.indexOf(lineNbr) !== -1) {
+                alert('This line is already a partner');
+                return;
+            }
+            
+            partners.push(lineNbr);
+            select.value = '';
+            renderPartnerList();
+            updatePartnerBalances();
+            if (currentView === 'allLines') renderAllLinesView();
+            autoSave();
+        }
+        
+        function removePartner(lineNbr) {
+            var idx = partners.indexOf(lineNbr);
+            if (idx !== -1) {
+                partners.splice(idx, 1);
+            }
+            
+            swaps = swaps.filter(function(s) {
+                return s.fromLine !== lineNbr && s.toLine !== lineNbr;
+            });
+            
+            renderPartnerList();
+            renderCalendar();
+            if (currentView === 'allLines') renderAllLinesView();
+            updateStats();
+            updatePartnerBalances();
+            autoSave();
+        }
+        
+        function renderPartnerList() {
+            var container = document.getElementById('partnerList');
+            
+            if (partners.length === 0) {
+                container.innerHTML = '<p style="color:#888; font-size:12px;">No partners added yet</p>';
+                return;
+            }
+            
+            var html = '';
+            partners.forEach(function(lineNbr) {
+                var displayNum = getDisplayNumber(lineNbr);
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === lineNbr; });
+                var desc = lineData ? lineData.lineDesc : '';
+                var assignedName = getAssignedName(lineNbr);
+                var nameDisplay = assignedName ? ' - ' + assignedName : '';
+
+                html += '<div class="partner-item">' +
+                    '<span class="line-info">Line ' + displayNum + ' (' + desc + ')' + nameDisplay + '</span>' +
+                    '<button class="remove-btn" onclick="removePartner(\'' + lineNbr + '\')">✕</button>' +
+                '</div>';
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function renderCalendar() {
+            if (!myLine) return;
+            
+            var container = document.getElementById('calendarView');
+            var calendar = ALL_LINES_CALENDAR[myLine];
+            if (!calendar) return;
+            
+            var months = generateMonthsArray();
+
+            var html = '';
+
+            months.forEach(function(m) {
+                html += '<div class="month-block">';
+                html += '<div class="month-title">' + m.name + '</div>';
+                html += '<div class="month-header"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>';
+                html += '<div class="month-days">';
+                
+                var firstDay = new Date(m.year, m.month, 1);
+                var lastDay = new Date(m.year, m.month + 1, 0);
+                var startDayOfWeek = firstDay.getDay();
+                
+                for (var i = 0; i < startDayOfWeek; i++) {
+                    html += '<div class="day-cell empty"></div>';
+                }
+                
+                for (var day = 1; day <= lastDay.getDate(); day++) {
+                    var dateKey = m.year + '-' + (m.month + 1) + '-' + day;
+                    var effectiveShift = getEffectiveShift(myLine, dateKey);
+                    var isWorkDay = effectiveShift !== '--';
+                    var isHoliday = HOLIDAYS[dateKey];
+                    var swapInfo = getSwapInfo(dateKey);
+                    
+                    var cellClass = 'day-cell ' + (isWorkDay ? 'work-day' : 'off-day');
+                    if (isHoliday) cellClass += ' holiday';
+                    if (swapInfo) {
+                        if (swapInfo.type === 'in') cellClass += ' swapped-in';
+                        else if (swapInfo.type === 'out') cellClass += ' swapped-out';
+                    }
+                    
+                    html += '<div class="' + cellClass + '" onclick="showSwapOptions(\'' + dateKey + '\')">';
+                    html += '<span class="day-num">' + day + '</span>';
+                    html += '<span class="shift-code">' + (effectiveShift === '--' ? 'OFF' : effectiveShift.substring(0, 3)) + '</span>';
+                    html += '</div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            container.innerHTML = html;
+            renderSwapList();
+        }
+        
+        function getEffectiveShift(lineNbr, dateKey) {
+            var calendar = ALL_LINES_CALENDAR[lineNbr];
+            if (!calendar) return '--';
+            
+            var baseShift = calendar.days[dateKey] ? calendar.days[dateKey].s : '--';
+            
+            if (lineNbr === myLine) {
+                for (var i = 0; i < swaps.length; i++) {
+                    var swap = swaps[i];
+                    if (swap.date === dateKey) {
+                        if (swap.fromLine === myLine) {
+                            return '--';
+                        } else if (swap.toLine === myLine) {
+                            return swap.shift;
+                        }
+                    }
+                }
+            }
+            
+            return baseShift;
+        }
+        
+        function getSwapInfo(dateKey) {
+            for (var i = 0; i < swaps.length; i++) {
+                var swap = swaps[i];
+                if (swap.date === dateKey) {
+                    if (swap.toLine === myLine) {
+                        return { type: 'in', swap: swap };
+                    } else if (swap.fromLine === myLine) {
+                        return { type: 'out', swap: swap };
+                    }
+                }
+            }
+            return null;
+        }
+        
+        function showSwapOptions(dateKey) {
+            if (partners.length === 0) {
+                alert('Please add at least one swap partner first');
+                return;
+            }
+            
+            var myCalendar = ALL_LINES_CALENDAR[myLine];
+            var myShift = myCalendar.days[dateKey] ? myCalendar.days[dateKey].s : '--';
+            var myIsWorking = myShift !== '--';
+            var myHasSwap = partnerHasSwapOnDate(myLine, dateKey);
+            
+            // Get ALL swaps on this date (not just ones involving myLine)
+            var swapsOnDate = swaps.filter(function(s) { return s.date === dateKey; });
+            
+            var date = new Date(dateKey.replace(/-/g, '/'));
+            var dateStr = date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            document.getElementById('swapModalTitle').textContent = swapsOnDate.length > 0 ? 'Manage Swaps' : 'Swap Options';
+            document.getElementById('swapModalDate').innerHTML = '<strong>' + dateStr + '</strong><br>Your shift: ' + (myIsWorking ? myShift : 'OFF') + (myHasSwap ? ' <span style="color:#9b59b6;">(has swap)</span>' : '');
+            
+            var content = '';
+            
+            // SECTION 1: Show ALL existing swaps on this date (allow removal)
+            if (swapsOnDate.length > 0) {
+                content += '<div style="color:#9b59b6; font-size:13px; font-weight:bold; margin-bottom:10px; padding-bottom:5px; border-bottom:1px solid #0f3460;">📋 Current Swaps on This Date (' + swapsOnDate.length + ')</div>';
+                
+                swapsOnDate.forEach(function(swap) {
+                    var isMySwap = swap.fromLine === myLine || swap.toLine === myLine;
+                    var borderColor = isMySwap ? '#e94560' : '#9b59b6';
+                    
+                    content += '<div class="swap-option" onclick="removeSwapById(\'' + swap.date + '\', \'' + swap.fromLine + '\', \'' + swap.toLine + '\')" style="border:2px solid ' + borderColor + ';">';
+                    content += '<div class="partner-info">';
+                    content += '<span class="line-name">Line ' + swap.fromLine + ' → Line ' + swap.toLine + '</span>';
+                    content += '<span class="shift-info">' + swap.shift + (isMySwap ? ' (involves you)' : ' (partner↔partner)') + '</span>';
+                    content += '</div>';
+                    content += '<span class="action-label" style="background:' + borderColor + '; color:white;">Remove</span>';
+                    content += '</div>';
+                });
+            }
+            
+            // SECTION 2: Swaps involving myLine (if I don't already have a swap)
+            if (!myHasSwap) {
+                content += '<div style="color:#4ecca3; font-size:13px; font-weight:bold; margin:15px 0 10px 0; padding-bottom:5px; border-bottom:1px solid #0f3460;">🔄 Swaps With Your Line</div>';
+                var hasMyLineOptions = false;
+                
+                partners.forEach(function(partnerLine) {
+                    var partnerCalendar = ALL_LINES_CALENDAR[partnerLine];
+                    if (!partnerCalendar) return;
+                    
+                    var partnerShift = partnerCalendar.days[dateKey] ? partnerCalendar.days[dateKey].s : '--';
+                    var partnerIsWorking = partnerShift !== '--';
+                    var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === partnerLine; });
+                    var partnerBusy = partnerHasSwapOnDate(partnerLine, dateKey);
+                    
+                    if (myIsWorking && !partnerIsWorking) {
+                        hasMyLineOptions = true;
+                        var partnerRestCheck = check8HourRest(partnerLine, dateKey, myShift);
+                        
+                        if (partnerBusy) {
+                            content += '<div class="swap-option" style="opacity:0.5; cursor:not-allowed; pointer-events:none;">';
+                            content += '<div class="partner-info">';
+                            content += '<span class="line-name">Line ' + partnerLine + ' (' + lineData.lineDesc + ')</span>';
+                            content += '<span class="shift-info" style="color:#e94560;">⚠ Partner already has a swap on this date</span>';
+                            content += '</div>';
+                            content += '<span class="action-label" style="background:#888; color:#ccc;">BUSY</span>';
+                            content += '</div>';
+                        } else if (!partnerRestCheck.valid) {
+                            content += '<div class="swap-option" style="opacity:0.5; cursor:not-allowed; pointer-events:none;">';
+                            content += '<div class="partner-info">';
+                            content += '<span class="line-name">Line ' + partnerLine + ' (' + lineData.lineDesc + ')</span>';
+                            content += '<span class="shift-info" style="color:#e94560;">⚠ 8hr rest violation: ' + partnerRestCheck.reason + '</span>';
+                            content += '</div>';
+                            content += '<span class="action-label" style="background:#888; color:#ccc;">REST</span>';
+                            content += '</div>';
+                        } else {
+                            content += '<div class="swap-option give" onclick="createSwap(\'' + dateKey + '\', \'' + myLine + '\', \'' + partnerLine + '\', \'' + myShift + '\')">';
+                            content += '<div class="partner-info">';
+                            content += '<span class="line-name">Give to Line ' + partnerLine + ' (' + lineData.lineDesc + ')</span>';
+                            content += '<span class="shift-info">Give your ' + myShift + ' shift, partner is OFF</span>';
+                            content += '</div>';
+                            content += '<span class="action-label">GIVE SHIFT</span>';
+                            content += '</div>';
+                        }
+                    } else if (!myIsWorking && partnerIsWorking) {
+                        hasMyLineOptions = true;
+                        var myRestCheck = check8HourRest(myLine, dateKey, partnerShift);
+                        
+                        if (partnerBusy) {
+                            content += '<div class="swap-option" style="opacity:0.5; cursor:not-allowed; pointer-events:none;">';
+                            content += '<div class="partner-info">';
+                            content += '<span class="line-name">Line ' + partnerLine + ' (' + lineData.lineDesc + ')</span>';
+                            content += '<span class="shift-info" style="color:#e94560;">⚠ Partner already has a swap on this date</span>';
+                            content += '</div>';
+                            content += '<span class="action-label" style="background:#888; color:#ccc;">BUSY</span>';
+                            content += '</div>';
+                        } else if (!myRestCheck.valid) {
+                            content += '<div class="swap-option" style="opacity:0.5; cursor:not-allowed; pointer-events:none;">';
+                            content += '<div class="partner-info">';
+                            content += '<span class="line-name">Line ' + partnerLine + ' (' + lineData.lineDesc + ')</span>';
+                            content += '<span class="shift-info" style="color:#e94560;">⚠ 8hr rest violation: ' + myRestCheck.reason + '</span>';
+                            content += '</div>';
+                            content += '<span class="action-label" style="background:#888; color:#ccc;">REST</span>';
+                            content += '</div>';
+                        } else {
+                            content += '<div class="swap-option take" onclick="createSwap(\'' + dateKey + '\', \'' + partnerLine + '\', \'' + myLine + '\', \'' + partnerShift + '\')">';
+                            content += '<div class="partner-info">';
+                            content += '<span class="line-name">Take from Line ' + partnerLine + ' (' + lineData.lineDesc + ')</span>';
+                            content += '<span class="shift-info">Take their ' + partnerShift + ' shift, you are OFF</span>';
+                            content += '</div>';
+                            content += '<span class="action-label">TAKE SHIFT</span>';
+                            content += '</div>';
+                        }
+                    }
+                });
+                
+                if (!hasMyLineOptions) {
+                    content += '<p style="color:#888; font-size:12px; margin:10px 0;">No swap options available with your line.</p>';
+                }
+            }
+            
+            // SECTION 3: Partner-to-Partner swaps (only if 2+ partners)
+            if (partners.length >= 2) {
+                content += '<div style="color:#9b59b6; font-size:13px; font-weight:bold; margin:15px 0 10px 0; padding-bottom:5px; border-bottom:1px solid #0f3460;">👥 Partner ↔ Partner Swaps</div>';
+                var hasPartnerOptions = false;
+                
+                for (var i = 0; i < partners.length; i++) {
+                    for (var j = i + 1; j < partners.length; j++) {
+                        var partner1 = partners[i];
+                        var partner2 = partners[j];
+                        
+                        var cal1 = ALL_LINES_CALENDAR[partner1];
+                        var cal2 = ALL_LINES_CALENDAR[partner2];
+                        if (!cal1 || !cal2) continue;
+                        
+                        var shift1 = cal1.days[dateKey] ? cal1.days[dateKey].s : '--';
+                        var shift2 = cal2.days[dateKey] ? cal2.days[dateKey].s : '--';
+                        var p1Working = shift1 !== '--';
+                        var p2Working = shift2 !== '--';
+                        
+                        var p1Busy = partnerHasSwapOnDate(partner1, dateKey);
+                        var p2Busy = partnerHasSwapOnDate(partner2, dateKey);
+                        
+                        var lineData1 = ANNUAL_BID.find(function(l) { return l.lineNbr === partner1; });
+                        var lineData2 = ANNUAL_BID.find(function(l) { return l.lineNbr === partner2; });
+                        
+                        // Partner1 gives to Partner2
+                        if (p1Working && !p2Working) {
+                            hasPartnerOptions = true;
+                            var restCheck = check8HourRest(partner2, dateKey, shift1);
+                            
+                            if (p1Busy || p2Busy) {
+                                content += '<div class="swap-option" style="opacity:0.5; cursor:not-allowed; pointer-events:none;">';
+                                content += '<div class="partner-info">';
+                                content += '<span class="line-name">Line ' + partner1 + ' → Line ' + partner2 + '</span>';
+                                content += '<span class="shift-info" style="color:#e94560;">⚠ One partner already has a swap</span>';
+                                content += '</div>';
+                                content += '<span class="action-label" style="background:#888; color:#ccc;">BUSY</span>';
+                                content += '</div>';
+                            } else if (!restCheck.valid) {
+                                content += '<div class="swap-option" style="opacity:0.5; cursor:not-allowed; pointer-events:none;">';
+                                content += '<div class="partner-info">';
+                                content += '<span class="line-name">Line ' + partner1 + ' → Line ' + partner2 + '</span>';
+                                content += '<span class="shift-info" style="color:#e94560;">⚠ 8hr rest: ' + restCheck.reason + '</span>';
+                                content += '</div>';
+                                content += '<span class="action-label" style="background:#888; color:#ccc;">REST</span>';
+                                content += '</div>';
+                            } else {
+                                content += '<div class="swap-option" style="border-left:3px solid #9b59b6;" onclick="createSwap(\'' + dateKey + '\', \'' + partner1 + '\', \'' + partner2 + '\', \'' + shift1 + '\')">';
+                                content += '<div class="partner-info">';
+                                content += '<span class="line-name">Line ' + partner1 + ' → Line ' + partner2 + '</span>';
+                                content += '<span class="shift-info">Transfer ' + shift1 + ' (L' + partner1 + ' working, L' + partner2 + ' OFF)</span>';
+                                content += '</div>';
+                                content += '<span class="action-label" style="background:#9b59b6; color:white;">TRANSFER</span>';
+                                content += '</div>';
+                            }
+                        }
+                        
+                        // Partner2 gives to Partner1
+                        if (p2Working && !p1Working) {
+                            hasPartnerOptions = true;
+                            var restCheck = check8HourRest(partner1, dateKey, shift2);
+                            
+                            if (p1Busy || p2Busy) {
+                                content += '<div class="swap-option" style="opacity:0.5; cursor:not-allowed; pointer-events:none;">';
+                                content += '<div class="partner-info">';
+                                content += '<span class="line-name">Line ' + partner2 + ' → Line ' + partner1 + '</span>';
+                                content += '<span class="shift-info" style="color:#e94560;">⚠ One partner already has a swap</span>';
+                                content += '</div>';
+                                content += '<span class="action-label" style="background:#888; color:#ccc;">BUSY</span>';
+                                content += '</div>';
+                            } else if (!restCheck.valid) {
+                                content += '<div class="swap-option" style="opacity:0.5; cursor:not-allowed; pointer-events:none;">';
+                                content += '<div class="partner-info">';
+                                content += '<span class="line-name">Line ' + partner2 + ' → Line ' + partner1 + '</span>';
+                                content += '<span class="shift-info" style="color:#e94560;">⚠ 8hr rest: ' + restCheck.reason + '</span>';
+                                content += '</div>';
+                                content += '<span class="action-label" style="background:#888; color:#ccc;">REST</span>';
+                                content += '</div>';
+                            } else {
+                                content += '<div class="swap-option" style="border-left:3px solid #9b59b6;" onclick="createSwap(\'' + dateKey + '\', \'' + partner2 + '\', \'' + partner1 + '\', \'' + shift2 + '\')">';
+                                content += '<div class="partner-info">';
+                                content += '<span class="line-name">Line ' + partner2 + ' → Line ' + partner1 + '</span>';
+                                content += '<span class="shift-info">Transfer ' + shift2 + ' (L' + partner2 + ' working, L' + partner1 + ' OFF)</span>';
+                                content += '</div>';
+                                content += '<span class="action-label" style="background:#9b59b6; color:white;">TRANSFER</span>';
+                                content += '</div>';
+                            }
+                        }
+                    }
+                }
+                
+                if (!hasPartnerOptions) {
+                    content += '<p style="color:#888; font-size:12px; margin:10px 0;">No partner-to-partner swaps available (same work/off status).</p>';
+                }
+            }
+            
+            if (!content) {
+                content = '<p style="color:#888;">No swap options available for this day.</p>';
+            }
+            
+            document.getElementById('swapModalContent').innerHTML = content;
+            document.getElementById('swapModal').classList.add('show');
+        }
+        
+        // Remove a specific swap by its identifiers
+        function removeSwapById(dateKey, fromLine, toLine) {
+            var removedSwap = null;
+            swaps = swaps.filter(function(s) {
+                if (s.date === dateKey && s.fromLine === fromLine && s.toLine === toLine) {
+                    removedSwap = s;
+                    return false;
+                }
+                return true;
+            });
+            
+            if (removedSwap) {
+                undoStack.push({ action: 'remove', swap: removedSwap });
+                if (undoStack.length > MAX_UNDO) undoStack.shift();
+                updateUndoButton();
+            }
+            
+            hideSwapModal();
+            renderCalendar();
+            if (currentView === 'allLines') renderAllLinesView();
+            updateStats();
+            updatePartnerBalances();
+            autoSave();
+        }
+        
+        function hideSwapModal() {
+            document.getElementById('swapModal').classList.remove('show');
+        }
+        
+        function createSwap(dateKey, fromLine, toLine, shift) {
+            // Check if either line already has a swap on this date
+            if (partnerHasSwapOnDate(fromLine, dateKey)) {
+                alert('Line ' + fromLine + ' already has a swap on this date');
+                return;
+            }
+            if (partnerHasSwapOnDate(toLine, dateKey)) {
+                alert('Line ' + toLine + ' already has a swap on this date');
+                return;
+            }
+            
+            var newSwap = {
+                date: dateKey,
+                fromLine: fromLine,
+                toLine: toLine,
+                shift: shift
+            };
+            
+            swaps.push(newSwap);
+            
+            // Add to undo stack
+            undoStack.push({ action: 'add', swap: newSwap });
+            if (undoStack.length > MAX_UNDO) undoStack.shift();
+            updateUndoButton();
+            
+            // Show toast for partner-to-partner swaps
+            var isPartnerSwap = fromLine !== myLine && toLine !== myLine;
+            if (isPartnerSwap) {
+                showToast('✓ Partner swap: Line ' + fromLine + ' → Line ' + toLine, 'success');
+            }
+            
+            hideSwapModal();
+            renderCalendar();
+            if (currentView === 'allLines') renderAllLinesView();
+            updateStats();
+            updatePartnerBalances();
+            autoSave();
+        }
+        
+        function removeSwap(dateKey) {
+            // Find the swap being removed for undo
+            var removedSwap = null;
+            for (var i = 0; i < swaps.length; i++) {
+                if (swaps[i].date === dateKey) {
+                    removedSwap = swaps[i];
+                    break;
+                }
+            }
+            
+            swaps = swaps.filter(function(s) {
+                return s.date !== dateKey;
+            });
+            
+            // Add to undo stack
+            if (removedSwap) {
+                undoStack.push({ action: 'remove', swap: removedSwap });
+                if (undoStack.length > MAX_UNDO) undoStack.shift();
+                updateUndoButton();
+            }
+            
+            hideSwapModal();
+            renderCalendar();
+            if (currentView === 'allLines') renderAllLinesView();
+            updateStats();
+            updatePartnerBalances();
+            autoSave();
+        }
+        
+        function updateStats() {
+            if (!myLine) return;
+            
+            var calendar = ALL_LINES_CALENDAR[myLine];
+            if (!calendar) return;
+            
+            var baseWorkDays = 0;
+            for (var dateKey in calendar.days) {
+                if (calendar.days[dateKey].s !== '--') {
+                    baseWorkDays++;
+                }
+            }
+            
+            var swapsIn = 0;
+            var swapsOut = 0;
+            swaps.forEach(function(swap) {
+                if (swap.toLine === myLine) swapsIn++;
+                if (swap.fromLine === myLine) swapsOut++;
+            });
+            
+            var currentWorkDays = baseWorkDays + swapsIn - swapsOut;
+            
+            document.getElementById('baseWorkDays').querySelector('.value').textContent = baseWorkDays;
+            document.getElementById('currentWorkDays').querySelector('.value').textContent = currentWorkDays;
+            document.getElementById('swapsIn').querySelector('.value').textContent = swapsIn;
+            document.getElementById('swapsOut').querySelector('.value').textContent = swapsOut;
+            
+            var currentBox = document.getElementById('currentWorkDays');
+            currentBox.className = 'stat-box';
+            if (currentWorkDays === 152) {
+                currentBox.classList.add('balanced');
+            } else if (currentWorkDays > 152) {
+                currentBox.classList.add('over');
+            } else {
+                currentBox.classList.add('under');
+            }
+            
+            var indicator = document.getElementById('balanceIndicator');
+            indicator.style.display = 'block';
+            indicator.className = 'balance-indicator';
+            
+            if (currentWorkDays === 152) {
+                indicator.classList.add('balanced');
+                indicator.textContent = '✓ BALANCED (152 days)';
+            } else if (currentWorkDays > 152) {
+                indicator.classList.add('over');
+                indicator.textContent = '⚠ OVER by ' + (currentWorkDays - 152) + ' day' + (currentWorkDays - 152 > 1 ? 's' : '') + ' (' + currentWorkDays + ' total)';
+            } else {
+                indicator.classList.add('under');
+                indicator.textContent = '⚠ UNDER by ' + (152 - currentWorkDays) + ' day' + (152 - currentWorkDays > 1 ? 's' : '') + ' (' + currentWorkDays + ' total)';
+            }
+        }
+        
+        function updatePartnerBalances() {
+            var container = document.getElementById('partnerBalances');
+            
+            // Show balances for ALL lines in the swap pool (myLine + partners)
+            var allLines = [];
+            if (myLine) allLines.push(myLine);
+            partners.forEach(function(p) {
+                if (allLines.indexOf(p) === -1) allLines.push(p);
+            });
+            
+            if (allLines.length === 0) {
+                container.innerHTML = '<p style="color:#888; font-size:12px;">Add partners to see their balances</p>';
+                return;
+            }
+            
+            var html = '';
+            allLines.forEach(function(lineNbr) {
+                var calendar = ALL_LINES_CALENDAR[lineNbr];
+                if (!calendar) return;
+                
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === lineNbr; });
+                
+                var baseWorkDays = 0;
+                for (var dateKey in calendar.days) {
+                    if (calendar.days[dateKey].s !== '--') {
+                        baseWorkDays++;
+                    }
+                }
+                
+                // Count ALL swaps affecting this line (including partner-to-partner)
+                var swapsIn = 0;
+                var swapsOut = 0;
+                swaps.forEach(function(swap) {
+                    if (swap.toLine === lineNbr) swapsIn++;
+                    if (swap.fromLine === lineNbr) swapsOut++;
+                });
+                
+                var currentWorkDays = baseWorkDays + swapsIn - swapsOut;
+                var isMyLine = lineNbr === myLine;
+                
+                var balanceClass = 'balanced';
+                var balanceText = '✓ ' + currentWorkDays;
+                if (currentWorkDays > 152) {
+                    balanceClass = 'over';
+                    balanceText = '+' + (currentWorkDays - 152) + ' (' + currentWorkDays + ')';
+                } else if (currentWorkDays < 152) {
+                    balanceClass = 'under';
+                    balanceText = '-' + (152 - currentWorkDays) + ' (' + currentWorkDays + ')';
+                }
+                
+                var borderStyle = isMyLine ? 'border:1px solid #4ecca3;' : '';
+                var displayNum = getDisplayNumber(lineNbr);
+
+                html += '<div class="partner-balance-item" style="' + borderStyle + '">' +
+                    '<span class="line-name">' + (isMyLine ? '★ ' : '') + 'Line ' + displayNum + '</span>' +
+                    '<span class="balance ' + balanceClass + '">' + balanceText + '</span>' +
+                '</div>';
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function renderSwapList() {
+            var container = document.getElementById('swapListContent');
+            
+            if (swaps.length === 0) {
+                container.innerHTML = '<p style="color:#888;">No swaps yet. Click on days in the calendar to create swaps.</p>';
+                return;
+            }
+            
+            var sortedSwaps = swaps.slice().sort(function(a, b) {
+                return new Date(a.date.replace(/-/g, '/')) - new Date(b.date.replace(/-/g, '/'));
+            });
+            
+            var html = '';
+            sortedSwaps.forEach(function(swap) {
+                var date = new Date(swap.date.replace(/-/g, '/'));
+                var dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                var dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                
+                var involvesMe = swap.toLine === myLine || swap.fromLine === myLine;
+                var isPartnerSwap = !involvesMe;
+                
+                var borderStyle = isPartnerSwap ? 'border-left:3px solid #9b59b6;' : '';
+                
+                html += '<div class="swap-item" style="' + borderStyle + '">';
+                html += '<div class="date">' + dayName + ' ' + dateStr + '</div>';
+                
+                if (involvesMe) {
+                    var isIncoming = swap.toLine === myLine;
+                    var otherLine = isIncoming ? swap.fromLine : swap.toLine;
+                    html += '<div class="description">' + (isIncoming ? 'Take' : 'Give') + ' ' + swap.shift + '</div>';
+                    html += '<div class="from-line">' + (isIncoming ? 'From Line ' + otherLine : 'My shift') + '</div>';
+                    html += '<div class="to-line">' + (isIncoming ? 'To me' : 'To Line ' + otherLine) + '</div>';
+                } else {
+                    html += '<div class="description" style="color:#9b59b6;">' + swap.shift + ' (partner↔partner)</div>';
+                    html += '<div class="from-line">From Line ' + swap.fromLine + '</div>';
+                    html += '<div class="to-line">To Line ' + swap.toLine + '</div>';
+                }
+                
+                html += '<button class="remove-btn" onclick="removeSwapById(\'' + swap.date + '\', \'' + swap.fromLine + '\', \'' + swap.toLine + '\')">✕</button>';
+                html += '</div>';
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        function removeSwapByDate(dateKey) {
+            // Find the swap being removed for undo
+            var removedSwap = null;
+            for (var i = 0; i < swaps.length; i++) {
+                if (swaps[i].date === dateKey) {
+                    removedSwap = swaps[i];
+                    break;
+                }
+            }
+            
+            swaps = swaps.filter(function(s) {
+                return s.date !== dateKey;
+            });
+            
+            // Add to undo stack
+            if (removedSwap) {
+                undoStack.push({ action: 'remove', swap: removedSwap });
+                if (undoStack.length > MAX_UNDO) undoStack.shift();
+                updateUndoButton();
+            }
+            
+            renderCalendar();
+            if (currentView === 'allLines') renderAllLinesView();
+            updateStats();
+            updatePartnerBalances();
+            autoSave();
+        }
+        
+        function updateUndoButton() {
+            var btn = document.getElementById('undoBtn');
+            var count = document.getElementById('undoCount');
+            count.textContent = undoStack.length;
+            btn.disabled = undoStack.length === 0;
+            btn.style.opacity = undoStack.length === 0 ? '0.5' : '1';
+        }
+        
+        function undoLastSwap() {
+            if (undoStack.length === 0) return;
+            
+            var lastAction = undoStack.pop();
+            
+            if (lastAction.action === 'add') {
+                // We added a swap, so remove it
+                swaps = swaps.filter(function(s) {
+                    return !(s.date === lastAction.swap.date && 
+                             s.fromLine === lastAction.swap.fromLine && 
+                             s.toLine === lastAction.swap.toLine);
+                });
+                showToast('↩️ Undid swap: ' + lastAction.swap.shift + ' on ' + formatDateKey(lastAction.swap.date), 'success');
+            } else if (lastAction.action === 'remove') {
+                // We removed a swap, so add it back
+                swaps.push(lastAction.swap);
+                showToast('↩️ Restored swap: ' + lastAction.swap.shift + ' on ' + formatDateKey(lastAction.swap.date), 'success');
+            }
+            
+            updateUndoButton();
+            renderCalendar();
+            if (currentView === 'allLines') renderAllLinesView();
+            renderSwapList();
+            updateStats();
+            updatePartnerBalances();
+            autoSave();
+        }
+        
+        function formatDateKey(dateKey) {
+            var parts = dateKey.split('-');
+            var date = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        function setView(view) {
+            currentView = view;
+            
+            document.getElementById('calViewBtn').classList.toggle('active', view === 'calendar');
+            document.getElementById('allLinesViewBtn').classList.toggle('active', view === 'allLines');
+            document.getElementById('listViewBtn').classList.toggle('active', view === 'list');
+            
+            document.getElementById('calendarView').style.display = view === 'calendar' ? 'grid' : 'none';
+            document.getElementById('allLinesView').style.display = view === 'allLines' ? 'block' : 'none';
+            document.getElementById('listView').style.display = view === 'list' ? 'block' : 'none';
+            
+            if (view === 'allLines') {
+                renderAllLinesView();
+            }
+        }
+        
+        function prevMonth() {
+            if (currentMonthIndex > 0) {
+                currentMonthIndex--;
+                renderAllLinesView();
+            }
+        }
+        
+        function nextMonth() {
+            if (currentMonthIndex < 11) {
+                currentMonthIndex++;
+                renderAllLinesView();
+            }
+        }
+        
+        // =====================================================
+        // ALL LINES VIEW WITH DRAG & DROP
+        // =====================================================
+        
+        function renderAllLinesView() {
+            if (!myLine) return;
+            
+            var m = MONTHS[currentMonthIndex];
+            document.getElementById('allLinesMonthTitle').textContent = m.name;
+            
+            var container = document.getElementById('allLinesContent');
+            var allLines = [myLine].concat(partners);
+            
+            var firstDay = new Date(m.year, m.month, 1);
+            var lastDay = new Date(m.year, m.month + 1, 0);
+            var daysInMonth = lastDay.getDate();
+            
+            var html = '<table style="width:100%; border-collapse:collapse; font-size:11px;">';
+            
+            // Header row
+            html += '<thead><tr style="position:sticky; top:0; background:#0f3460; z-index:10;">';
+            html += '<th style="padding:8px; text-align:left; color:#4ecca3; min-width:120px; border-bottom:2px solid #16213e;">Line</th>';
+            html += '<th style="padding:8px; text-align:center; color:#4ecca3; min-width:50px; border-bottom:2px solid #16213e;">Balance</th>';
+            
+            for (var d = 1; d <= daysInMonth; d++) {
+                var dateKey = m.year + '-' + (m.month + 1) + '-' + d;
+                var dayDate = new Date(m.year, m.month, d);
+                var dayName = ['Su','Mo','Tu','We','Th','Fr','Sa'][dayDate.getDay()];
+                var isWeekend = dayDate.getDay() === 0 || dayDate.getDay() === 6;
+                var isHoliday = HOLIDAYS[dateKey];
+                
+                var headerStyle = 'padding:4px 2px; text-align:center; min-width:32px; border-bottom:2px solid #16213e;';
+                if (isHoliday) headerStyle += ' color:#e94560; font-weight:bold;';
+                else if (isWeekend) headerStyle += ' color:#888;';
+                else headerStyle += ' color:#ccc;';
+                
+                html += '<th style="' + headerStyle + '">' + d + '<br><span style="font-size:9px;">' + dayName + '</span></th>';
+            }
+            html += '</tr></thead>';
+            
+            // Body rows
+            html += '<tbody>';
+            allLines.forEach(function(lineNbr, idx) {
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === lineNbr; });
+                var calendar = ALL_LINES_CALENDAR[lineNbr];
+                if (!lineData || !calendar) return;
+                
+                var workDays = getLineWorkDays(lineNbr);
+                var balanceClass = workDays === 152 ? 'color:#4ecca3;' : (workDays > 152 ? 'color:#e94560;' : 'color:#f0a500;');
+                var balanceText = workDays === 152 ? '✓ 152' : (workDays > 152 ? '+' + (workDays - 152) : '-' + (152 - workDays));
+                
+                var isMyLine = lineNbr === myLine;
+                var rowBg = isMyLine ? 'background:rgba(78,204,163,0.1);' : (idx % 2 === 0 ? '' : 'background:rgba(255,255,255,0.02);');
+                var displayNum = getDisplayNumber(lineNbr);
+
+                html += '<tr style="' + rowBg + '" data-line="' + lineNbr + '">';
+                html += '<td style="padding:8px; color:' + (isMyLine ? '#4ecca3' : '#fff') + '; font-weight:' + (isMyLine ? 'bold' : 'normal') + '; border-bottom:1px solid #16213e;">';
+                html += (isMyLine ? '★ ' : '') + 'Line ' + displayNum + ' <span style="color:#888;">(' + lineData.lineDesc + ')</span></td>';
+                html += '<td style="padding:8px; text-align:center; font-weight:bold; ' + balanceClass + ' border-bottom:1px solid #16213e;">' + balanceText + '</td>';
+                
+                for (var d = 1; d <= daysInMonth; d++) {
+                    var dateKey = m.year + '-' + (m.month + 1) + '-' + d;
+                    var effectiveShift = getEffectiveShiftForLine(lineNbr, dateKey);
+                    var isWorkDay = effectiveShift !== '--';
+                    var isHoliday = HOLIDAYS[dateKey];
+                    
+                    var swapType = null;
+                    for (var s = 0; s < swaps.length; s++) {
+                        if (swaps[s].date === dateKey) {
+                            if (swaps[s].toLine === lineNbr) swapType = 'in';
+                            else if (swaps[s].fromLine === lineNbr) swapType = 'out';
+                        }
+                    }
+                    
+                    var cellBg = isWorkDay ? '#FFC000' : '#FFFFFF';
+                    var cellColor = '#000';
+                    var cellBorder = '';
+                    if (swapType === 'in') cellBorder = 'border:2px solid #4ecca3;';
+                    else if (swapType === 'out') cellBorder = 'border:2px solid #2563eb;';
+                    else if (isHoliday) cellBorder = 'border:2px solid #e94560;';
+                    
+                    var cellStyle = 'padding:2px; text-align:center; background:' + cellBg + '; color:' + cellColor + '; font-size:9px; ' + cellBorder;
+                    
+                    // Make work days draggable
+                    var draggable = isWorkDay ? 'true' : 'false';
+                    var cursorStyle = isWorkDay ? 'cursor:grab;' : 'cursor:pointer;';
+                    
+                    html += '<td class="shift-cell" draggable="' + draggable + '" ' +
+                            'data-line="' + lineNbr + '" ' +
+                            'data-date="' + dateKey + '" ' +
+                            'data-shift="' + effectiveShift + '" ' +
+                            'style="' + cellStyle + cursorStyle + '" ' +
+                            'onclick="showSwapOptions(\'' + dateKey + '\')" ' +
+                            'title="' + dateKey + ': ' + effectiveShift + (isWorkDay ? ' (drag to swap)' : ' (drop target)') + '">';
+                    html += (effectiveShift === '--' ? '' : effectiveShift.substring(0,3));
+                    html += '</td>';
+                }
+                
+                html += '</tr>';
+            });
+            
+            html += '</tbody></table>';
+            
+            // Summary row
+            html += '<div style="margin-top:15px; padding:10px; background:#16213e; border-radius:5px; display:flex; gap:20px; flex-wrap:wrap;">';
+            allLines.forEach(function(lineNbr) {
+                var displayNum = getDisplayNumber(lineNbr);
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === lineNbr; });
+                var workDays = getLineWorkDays(lineNbr);
+                var isMyLine = lineNbr === myLine;
+                var balanceClass = workDays === 152 ? 'color:#4ecca3;' : (workDays > 152 ? 'color:#e94560;' : 'color:#f0a500;');
+                var diff = workDays - 152;
+                var diffText = diff === 0 ? 'BALANCED' : (diff > 0 ? '+' + diff + ' over' : diff + ' under');
+
+                html += '<div style="' + (isMyLine ? 'border:1px solid #4ecca3; padding:5px 10px; border-radius:5px;' : '') + '">';
+                html += '<span style="color:' + (isMyLine ? '#4ecca3' : '#888') + ';">' + (isMyLine ? '★ ' : '') + 'Line ' + displayNum + ':</span> ';
+                html += '<span style="font-weight:bold; ' + balanceClass + '">' + workDays + ' days (' + diffText + ')</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+            
+            container.innerHTML = html;
+            
+            // Attach drag and drop event listeners
+            attachDragDropListeners();
+        }
+        
+        function attachDragDropListeners() {
+            var cells = document.querySelectorAll('.shift-cell');
+            
+            cells.forEach(function(cell) {
+                cell.addEventListener('dragstart', handleDragStart);
+                cell.addEventListener('dragend', handleDragEnd);
+                cell.addEventListener('dragover', handleDragOver);
+                cell.addEventListener('dragleave', handleDragLeave);
+                cell.addEventListener('drop', handleDrop);
+            });
+        }
+        
+        function getLineWorkDays(lineNbr) {
+            var calendar = ALL_LINES_CALENDAR[lineNbr];
+            if (!calendar) return 0;
+            
+            var workDays = 0;
+            for (var dateKey in calendar.days) {
+                if (calendar.days[dateKey].s !== '--') {
+                    workDays++;
+                }
+            }
+            
+            swaps.forEach(function(swap) {
+                if (swap.toLine === lineNbr) workDays++;
+                if (swap.fromLine === lineNbr) workDays--;
+            });
+            
+            return workDays;
+        }
+        
+        function autoSave() {
+            try {
+                var data = {
+                    myLine: myLine,
+                    partners: partners,
+                    swaps: swaps
+                };
+                localStorage.setItem('polishBidSwapBuilder', JSON.stringify(data));
+            } catch (e) {
+                console.error('Error auto-saving:', e);
+            }
+        }
+        
+        function saveSwaps() {
+            if (!myLine) {
+                alert('Please select your line first');
+                return;
+            }
+            
+            var data = {
+                myLine: myLine,
+                partners: partners,
+                swaps: swaps,
+                savedAt: new Date().toISOString(),
+                version: '1.0'
+            };
+            
+            var json = JSON.stringify(data, null, 2);
+            var blob = new Blob([json], { type: 'application/json' });
+            var url = URL.createObjectURL(blob);
+            
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = 'SwapBuilder_Line' + myLine + '_' + new Date().toISOString().slice(0,10) + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Also auto-save to localStorage as backup
+            autoSave();
+        }
+        
+        function loadSwapsFromFile(event) {
+            var file = event.target.files[0];
+            if (!file) return;
+            
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    var data = JSON.parse(e.target.result);
+                    
+                    if (!data.myLine || !data.swaps) {
+                        alert('Invalid swap file format');
+                        return;
+                    }
+                    
+                    // Confirm before loading
+                    var msg = 'Load swap configuration?\n\n' +
+                        'Line: ' + data.myLine + '\n' +
+                        'Partners: ' + (data.partners ? data.partners.length : 0) + '\n' +
+                        'Swaps: ' + data.swaps.length + '\n';
+                    if (data.savedAt) {
+                        msg += 'Saved: ' + new Date(data.savedAt).toLocaleString();
+                    }
+                    msg += '\n\nThis will replace your current configuration.';
+                    
+                    if (!confirm(msg)) return;
+                    
+                    // Load the data
+                    myLine = data.myLine;
+                    partners = data.partners || [];
+                    swaps = data.swaps || [];
+                    undoStack = [];
+                    
+                    // Update UI
+                    document.getElementById('myLineSelect').value = myLine;
+                    selectMyLine();
+                    renderPartnerList();
+                    renderCalendar();
+                    if (currentView === 'allLines') renderAllLinesView();
+                    updateStats();
+                    updatePartnerBalances();
+                    updateUndoButton();
+                    
+                    // Save to localStorage
+                    autoSave();
+                    
+                    showToast('✓ Loaded ' + swaps.length + ' swaps for Line ' + myLine, 'success');
+                    
+                } catch (err) {
+                    alert('Error reading file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset the input so the same file can be loaded again
+            event.target.value = '';
+        }
+        
+        function loadSavedSwaps() {
+            try {
+                var stored = localStorage.getItem('polishBidSwapBuilder');
+                if (stored) {
+                    var data = JSON.parse(stored);
+                    if (data.myLine) {
+                        myLine = data.myLine;
+                        document.getElementById('myLineSelect').value = myLine;
+                        selectMyLine();
+                    }
+                    if (data.partners) {
+                        partners = data.partners;
+                        renderPartnerList();
+                    }
+                    if (data.swaps) {
+                        swaps = data.swaps;
+                        renderCalendar();
+                        updateStats();
+                        updatePartnerBalances();
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading saved swaps:', e);
+            }
+        }
+        
+        function clearAllSwaps() {
+            if (!confirm('Clear all swaps and partners? This cannot be undone.')) return;
+            
+            swaps.length = 0;
+            partners.length = 0;
+            undoStack.length = 0;
+            swaps = [];
+            partners = [];
+            undoStack = [];
+            
+            try {
+                localStorage.removeItem('polishBidSwapBuilder');
+            } catch (e) {
+                console.error('Error clearing localStorage:', e);
+            }
+            
+            renderPartnerList();
+            renderCalendar();
+            renderAllLinesView();
+            renderSwapList();
+            updateStats();
+            updatePartnerBalances();
+            updateUndoButton();
+            
+            console.log('Cleared - swaps:', swaps.length, 'partners:', partners.length);
+        }
+        
+        // =====================================================
+        // PRINT YEAR CALENDAR FUNCTIONS
+        // =====================================================
+        
+        function showPrintYearModal() {
+            if (!myLine) {
+                alert('Please select your line first');
+                return;
+            }
+            
+            var container = document.getElementById('printLineSelections');
+            var html = '';
+            
+            // My line (always checked, disabled)
+            var myLineData = ANNUAL_BID.find(function(l) { return l.lineNbr === myLine; });
+            var myName = getAssignedName(myLine);
+            var myNameDisplay = myName ? ' - ' + myName : '';
+            html += '<label style="display:flex; align-items:center; gap:10px; color:#4ecca3; margin-bottom:8px; padding:8px; background:#16213e; border-radius:5px;">' +
+                '<input type="checkbox" checked disabled style="width:18px; height:18px;">' +
+                '<span><strong>Line ' + myLine + '</strong> (' + (myLineData ? myLineData.lineDesc : '') + ')' + myNameDisplay + ' - Your Line</span>' +
+            '</label>';
+            
+            // Partner lines
+            if (partners.length > 0) {
+                partners.forEach(function(p) {
+                    var pData = ANNUAL_BID.find(function(l) { return l.lineNbr === p; });
+                    var pName = getAssignedName(p);
+                    var pNameDisplay = pName ? ' - ' + pName : '';
+                    html += '<label style="display:flex; align-items:center; gap:10px; color:#ccc; margin-bottom:8px; padding:8px; background:#16213e; border-radius:5px; cursor:pointer;">' +
+                        '<input type="checkbox" class="print-partner-checkbox" value="' + p + '" checked style="width:18px; height:18px;">' +
+                        '<span>Line ' + p + ' (' + (pData ? pData.lineDesc : '') + ')' + pNameDisplay + '</span>' +
+                    '</label>';
+                });
+            } else {
+                html += '<p style="color:#888; font-size:12px; font-style:italic;">No partners added. Add partners to print their calendars too.</p>';
+            }
+            
+            container.innerHTML = html;
+            document.getElementById('printYearModal').classList.add('show');
+        }
+        
+        function hidePrintYearModal() {
+            document.getElementById('printYearModal').classList.remove('show');
+        }
+        
+        function printSelectedYearCalendars() {
+            var linesToPrint = [myLine];
+            
+            // Get selected partner lines
+            var checkboxes = document.querySelectorAll('.print-partner-checkbox:checked');
+            checkboxes.forEach(function(cb) {
+                linesToPrint.push(cb.value);
+            });
+            
+            var showSwaps = document.getElementById('printShowSwaps').checked;
+            var traditionalView = document.getElementById('printTraditionalView').checked;
+            
+            // Generate print content for all selected lines
+            var printContent = generatePrintContent(linesToPrint, showSwaps, traditionalView);
+            
+            var printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            setTimeout(function() {
+                printWindow.print();
+            }, 300);
+            
+            hidePrintYearModal();
+        }
+        
+        function generatePrintContent(linesToPrint, showSwaps, traditionalView) {
+            var html = '<!DOCTYPE html><html><head><title>Year Calendar - Swap Builder</title>';
+            html += '<style>';
+            html += '* { box-sizing: border-box; margin: 0; padding: 0; }';
+            html += 'html, body { height: 100%; width: 100%; }';
+            html += 'body { font-family: Arial, sans-serif; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }';
+            html += '.page { page-break-after: always; padding: 3px; height: 100vh; display: flex; flex-direction: column; }';
+            html += '.page:last-child { page-break-after: auto; }';
+            html += 'h3 { font-size: 16px; margin-bottom: 6px; flex-shrink: 0; }';
+            
+            // Grid view styles
+            html += '.calendar-grid { display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(4, 1fr); gap: 5px; flex: 1; height: 100%; }';
+            html += '.month-block { background: #f5f5f5; border: 1px solid #999; padding: 4px; border-radius: 3px; display: flex; flex-direction: column; height: 100%; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }';
+            html += '.month-title { font-weight: bold; text-align: center; margin-bottom: 2px; font-size: 11px; flex-shrink: 0; }';
+            html += '.month-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; margin-bottom: 2px; flex-shrink: 0; }';
+            html += '.month-header span { text-align: center; font-size: 8px; color: #666; font-weight: bold; }';
+            html += '.month-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; flex: 1; }';
+            html += '.cal-day { display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 2px; border: 1px solid #ccc; position: relative; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }';
+            html += '.cal-day.empty { background: transparent; border: none; }';
+            html += '.cal-day .day-num { font-size: 7px; opacity: 0.7; }';
+            html += '.cal-day .shift-code { font-weight: bold; font-size: 8px; }';
+            html += '.cal-day.holiday { border: 2px solid #e94560 !important; }';
+            html += '.cal-day .holiday-tag { position: absolute; bottom: 0; font-size: 5px; font-weight: bold; color: #e94560; background: rgba(255,255,255,0.8); padding: 0 1px; }';
+            html += '.cal-day.swapped-in { border: 2px solid #4ecca3 !important; }';
+            html += '.cal-day.swapped-out { border: 2px solid #2563eb !important; }';
+            html += '.cal-day .swap-indicator { position: absolute; top: 0; right: 0; font-size: 5px; font-weight: bold; padding: 0 1px; }';
+            html += '.cal-day .swap-indicator.in { color: #4ecca3; background: rgba(78,204,163,0.2); }';
+            html += '.cal-day .swap-indicator.out { color: #2563eb; background: rgba(37,99,235,0.2); }';
+            
+            // Traditional view styles
+            html += '.traditional-view { width: 100%; display: flex; flex-direction: column; flex: 1; }';
+            html += '.traditional-month-row { display: flex; margin-bottom: 0px; flex: 1; page-break-inside: avoid; }';
+            html += '.traditional-month-label { width: 50px; font-weight: bold; color: #000; text-align: center; flex-shrink: 0; font-size: 8px; display: flex; align-items: center; justify-content: center; }';
+            html += '.traditional-month-data { flex: 1; display: flex; flex-direction: column; gap: 0px; min-width: 0; }';
+            html += '.traditional-row { display: grid; grid-template-columns: repeat(31, 1fr); gap: 0px; width: 100%; }';
+            html += '.traditional-day-cell { height: 11px; display: flex; align-items: center; justify-content: center; font-size: 9px; border: 0.5px solid #666; position: relative; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }';
+            html += '.traditional-day-cell.header { background: #ddd; font-weight: bold; font-size: 9px; }';
+            html += '.traditional-day-cell.dow { background: #eee; font-size: 8px; }';
+            html += '.traditional-day-cell.work { background: #FFC000; }';
+            html += '.traditional-day-cell.off { background: #FFFFFF; }';
+            html += '.traditional-day-cell.swapped-in { border: 2px solid #4ecca3 !important; }';
+            html += '.traditional-day-cell.swapped-out { border: 2px solid #2563eb !important; }';
+            html += '.traditional-day-cell.holiday { border: 2px solid #e94560 !important; }';
+            
+            
+            html += '@page { size: landscape; margin: 0.15in; }';
+            html += '@media print { body { padding: 0px; } .calendar-grid { gap: 5px; } .month-block { padding: 4px; } .cal-day { min-height: 18px; } }';
+            html += '</style></head><body>';
+            
+            // Generate a page for each line
+            linesToPrint.forEach(function(lineNbr, idx) {
+                var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === lineNbr; });
+                var calendar = ALL_LINES_CALENDAR[lineNbr];
+                if (!lineData || !calendar) return;
+                
+                var isMyLine = lineNbr === myLine;
+                var lineLabel = isMyLine ? ' (Your Line)' : ' (Partner)';
+                var assignedName = getAssignedName(lineNbr);
+                var nameDisplay = assignedName ? ' - ' + assignedName : '';
+                
+                // Build swap info for the header
+                var swapInfo = '';
+                if (showSwaps && swaps.length > 0) {
+                    var lineSwaps = swaps.filter(function(s) { return s.fromLine === lineNbr || s.toLine === lineNbr; });
+                    if (lineSwaps.length > 0) {
+                        swapInfo = ' | ' + lineSwaps.length + ' swap(s)';
+                    }
+                }
+                
+                // Build inline legend
+                var legendHtml = '<span style="margin-left:auto; display:flex; gap:10px; font-size:9px; font-weight:normal;">';
+                legendHtml += '<span style="display:flex; align-items:center; gap:3px;"><span style="width:12px; height:12px; background:#FFC000; border:1px solid #999; display:inline-block;"></span>Work</span>';
+                legendHtml += '<span style="display:flex; align-items:center; gap:3px;"><span style="width:12px; height:12px; background:#FFF; border:1px solid #999; display:inline-block;"></span>Off</span>';
+                legendHtml += '<span style="display:flex; align-items:center; gap:3px;"><span style="width:12px; height:12px; background:#FFC000; border:2px solid #e94560; display:inline-block;"></span>Holiday</span>';
+                if (showSwaps) {
+                    legendHtml += '<span style="display:flex; align-items:center; gap:3px;"><span style="width:12px; height:12px; background:#FFC000; border:2px solid #4ecca3; display:inline-block;"></span>Taken</span>';
+                    legendHtml += '<span style="display:flex; align-items:center; gap:3px;"><span style="width:12px; height:12px; background:#FFF; border:2px solid #2563eb; display:inline-block;"></span>Given</span>';
+                }
+                legendHtml += '</span>';
+                
+                html += '<div class="page">';
+                html += '<h3 style="display:flex; align-items:center;">Line ' + lineNbr + ' (' + lineData.lineDesc + ')' + nameDisplay + lineLabel + swapInfo + legendHtml + '</h3>';
+                
+                if (traditionalView) {
+                    html += generateTraditionalViewHTML(lineNbr, showSwaps);
+                } else {
+                    html += generateGridViewHTML(lineNbr, showSwaps);
+                }
+                
+                html += '</div>';
+            });
+            
+            html += '</body></html>';
+            
+            return html;
+        }
+        
+        function generateGridViewHTML(lineNbr, showSwaps) {
+            var calendar = ALL_LINES_CALENDAR[lineNbr];
+            var html = '<div class="calendar-grid">';
+
+            var months = generateMonthsArray();
+
+            months.forEach(function(m) {
+                html += '<div class="month-block">';
+                html += '<div class="month-title">' + m.name + '</div>';
+                html += '<div class="month-header"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>';
+                html += '<div class="month-days">';
+                
+                var firstDay = new Date(m.year, m.month, 1);
+                var lastDay = new Date(m.year, m.month + 1, 0);
+                var startDayOfWeek = firstDay.getDay();
+                
+                for (var i = 0; i < startDayOfWeek; i++) {
+                    html += '<div class="cal-day empty"></div>';
+                }
+                
+                for (var day = 1; day <= lastDay.getDate(); day++) {
+                    var dateKey = m.year + '-' + (m.month + 1) + '-' + day;
+                    var dayData = calendar.days[dateKey] || { s: '--', b: 0 };
+                    var effectiveShift = showSwaps ? getEffectiveShiftForLine(lineNbr, dateKey) : dayData.s;
+                    var isWorkDay = effectiveShift !== '--';
+                    var holiday = HOLIDAYS[dateKey];
+                    var isBalanceDay = dayData.b === 1;
+                    
+                    // Check for swaps on this line
+                    var swapInfo = null;
+                    if (showSwaps) {
+                        swapInfo = getSwapInfoForLine(lineNbr, dateKey);
+                    }
+                    
+                    var bgColor = isBalanceDay ? '#FF0000' : (isWorkDay ? '#FFC000' : '#FFFFFF');
+                    var textColor = isBalanceDay ? '#FFFFFF' : '#000';
+                    
+                    var cellClass = 'cal-day';
+                    if (holiday) cellClass += ' holiday';
+                    if (showSwaps && swapInfo) {
+                        if (swapInfo.type === 'in') cellClass += ' swapped-in';
+                        else if (swapInfo.type === 'out') cellClass += ' swapped-out';
+                    }
+                    
+                    html += '<div class="' + cellClass + '" style="background:' + bgColor + '; color:' + textColor + ';">';
+                    html += '<span class="day-num">' + day + '</span>';
+                    html += '<span class="shift-code">' + effectiveShift + '</span>';
+                    
+                    if (holiday) {
+                        html += '<span class="holiday-tag">' + holiday + '</span>';
+                    }
+                    
+                    if (showSwaps && swapInfo) {
+                        var indicatorClass = swapInfo.type === 'in' ? 'in' : 'out';
+                        var indicatorText = swapInfo.type === 'in' ? '←' : '→';
+                        html += '<span class="swap-indicator ' + indicatorClass + '">' + indicatorText + '</span>';
+                    }
+                    
+                    html += '</div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        function generateTraditionalViewHTML(lineNbr, showSwaps) {
+            var calendar = ALL_LINES_CALENDAR[lineNbr];
+            var html = '<div class="traditional-view">';
+
+            // Generate compact month names for traditional view
+            var shortMonthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+            var baseMonths = generateMonthsArray();
+            var months = baseMonths.map(function(m) {
+                var shortYear = String(m.year).slice(-2);
+                return { name: shortMonthNames[m.month] + ' ' + shortYear, year: m.year, month: m.month };
+            });
+
+            var dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            
+            months.forEach(function(m) {
+                var lastDay = new Date(m.year, m.month + 1, 0);
+                var daysInMonth = lastDay.getDate();
+                
+                html += '<div class="traditional-month-row">';
+                html += '<div class="traditional-month-label">' + m.name + '</div>';
+                html += '<div class="traditional-month-data">';
+                
+                // Day numbers row
+                html += '<div class="traditional-row">';
+                for (var d = 1; d <= 31; d++) {
+                    if (d <= daysInMonth) {
+                        html += '<div class="traditional-day-cell header">' + d + '</div>';
+                    } else {
+                        html += '<div class="traditional-day-cell header" style="background:#eee;"></div>';
+                    }
+                }
+                html += '</div>';
+                
+                // Day of week row
+                html += '<div class="traditional-row">';
+                for (var d = 1; d <= 31; d++) {
+                    if (d <= daysInMonth) {
+                        var date = new Date(m.year, m.month, d);
+                        html += '<div class="traditional-day-cell dow">' + dayNames[date.getDay()] + '</div>';
+                    } else {
+                        html += '<div class="traditional-day-cell dow" style="background:#eee;"></div>';
+                    }
+                }
+                html += '</div>';
+                
+                // Shift codes row
+                html += '<div class="traditional-row">';
+                for (var d = 1; d <= 31; d++) {
+                    if (d <= daysInMonth) {
+                        var dateKey = m.year + '-' + (m.month + 1) + '-' + d;
+                        var dayData = calendar.days[dateKey] || { s: '--', b: 0 };
+                        var effectiveShift = showSwaps ? getEffectiveShiftForLine(lineNbr, dateKey) : dayData.s;
+                        var isWorkDay = effectiveShift !== '--';
+                        var holiday = HOLIDAYS[dateKey];
+                        var isBalanceDay = dayData.b === 1;
+                        
+                        var swapInfo = null;
+                        if (showSwaps) {
+                            swapInfo = getSwapInfoForLine(lineNbr, dateKey);
+                        }
+                        
+                        var bgColor = isBalanceDay ? '#FF0000' : (isWorkDay ? '#FFC000' : '#FFFFFF');
+                        var cellClass = 'traditional-day-cell ' + (isWorkDay ? 'work' : 'off');
+                        if (holiday) cellClass += ' holiday';
+                        if (showSwaps && swapInfo) {
+                            if (swapInfo.type === 'in') cellClass += ' swapped-in';
+                            else if (swapInfo.type === 'out') cellClass += ' swapped-out';
+                        }
+                        
+                        var shiftDisplay = effectiveShift === '--' ? '' : effectiveShift.substring(0, 3);
+                        html += '<div class="' + cellClass + '" style="background:' + bgColor + '; font-size:6px;">' + shiftDisplay + '</div>';
+                    } else {
+                        html += '<div class="traditional-day-cell" style="background:#eee;"></div>';
+                    }
+                }
+                html += '</div>';
+                
+                html += '</div></div>';
+            });
+            
+            html += '</div>';
+            return html;
+        }
+        
+        // Helper to get swap info for any line (not just myLine)
+        function getSwapInfoForLine(lineNbr, dateKey) {
+            for (var i = 0; i < swaps.length; i++) {
+                var swap = swaps[i];
+                if (swap.date === dateKey) {
+                    if (swap.toLine === lineNbr) {
+                        return { type: 'in', swap: swap };
+                    }
+                    if (swap.fromLine === lineNbr) {
+                        return { type: 'out', swap: swap };
+                    }
+                }
+            }
+            return null;
+        }
+        
+        function exportSwappedICS() {
+            if (!myLine) {
+                alert('Please select your line first');
+                return;
+            }
+            
+            var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === myLine; });
+            var calendar = ALL_LINES_CALENDAR[myLine];
+            if (!calendar || !lineData) return;
+            
+            var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
+            var icsContent = [
+                'BEGIN:VCALENDAR',
+                'VERSION:2.0',
+                'PRODID:-//Polish Bid Swap Builder ' + bidYear + '-' + String(bidYear + 1).slice(-2) + '//EN',
+                'CALSCALE:GREGORIAN',
+                'METHOD:PUBLISH',
+                'X-WR-CALNAME:Line ' + myLine + ' (' + lineData.lineDesc + ') - Custom Schedule'
+            ];
+
+            var startDate = new Date(bidYear, 3, 1);
+            var endDate = new Date(bidYear + 1, 2, 31);
+            var currentDate = new Date(startDate);
+            
+            while (currentDate <= endDate) {
+                var dateKey = currentDate.getFullYear() + '-' + (currentDate.getMonth() + 1) + '-' + currentDate.getDate();
+                var effectiveShift = getEffectiveShift(myLine, dateKey);
+                
+                if (effectiveShift !== '--') {
+                    var year = currentDate.getFullYear();
+                    var month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                    var day = String(currentDate.getDate()).padStart(2, '0');
+                    
+                    var hour = parseInt(effectiveShift.substring(1, 3), 10);
+                    if (isNaN(hour)) hour = 6;
+                    var startHour = String(hour).padStart(2, '0');
+                    var endHourNum = (hour + 12) % 24;
+                    var endHour = String(endHourNum).padStart(2, '0');
+                    
+                    var endYear = year;
+                    var endMonth = month;
+                    var endDay = day;
+                    if (hour + 12 >= 24) {
+                        var endDateObj = new Date(currentDate);
+                        endDateObj.setDate(endDateObj.getDate() + 1);
+                        endYear = endDateObj.getFullYear();
+                        endMonth = String(endDateObj.getMonth() + 1).padStart(2, '0');
+                        endDay = String(endDateObj.getDate()).padStart(2, '0');
+                    }
+                    
+                    var swapInfo = getSwapInfo(dateKey);
+                    var description = 'Line ' + myLine;
+                    if (swapInfo) {
+                        var otherLine = swapInfo.type === 'in' ? swapInfo.swap.fromLine : swapInfo.swap.toLine;
+                        description += swapInfo.type === 'in' ? ' (Swapped from Line ' + otherLine + ')' : ' (Swapped to Line ' + otherLine + ')';
+                    }
+                    
+                    icsContent.push('BEGIN:VEVENT');
+                    icsContent.push('DTSTART:' + year + month + day + 'T' + startHour + '0000');
+                    icsContent.push('DTEND:' + endYear + endMonth + endDay + 'T' + endHour + '0000');
+                    icsContent.push('SUMMARY:' + effectiveShift + (swapInfo ? ' *' : ''));
+                    icsContent.push('DESCRIPTION:' + description);
+                    icsContent.push('UID:' + year + month + day + '-swap-' + myLine + '@polishbid');
+                    icsContent.push('END:VEVENT');
+                }
+                
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            icsContent.push('END:VCALENDAR');
+            
+            var blob = new Blob([icsContent.join('\r\n')], { type: 'text/calendar' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
+            a.download = 'Line_' + myLine + '_CustomSchedule_' + bidYear + '-' + String(bidYear + 1).slice(-2) + '.ics';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function printSwapSummary() {
+            if (!myLine) {
+                alert('Please select your line first');
+                return;
+            }
+            
+            var lineData = ANNUAL_BID.find(function(l) { return l.lineNbr === myLine; });
+            var calendar = ALL_LINES_CALENDAR[myLine];
+            if (!calendar || !lineData) return;
+            
+            var baseWorkDays = 0;
+            for (var dateKey in calendar.days) {
+                if (calendar.days[dateKey].s !== '--') baseWorkDays++;
+            }
+            
+            var swapsIn = 0, swapsOut = 0;
+            swaps.forEach(function(swap) {
+                if (swap.toLine === myLine) swapsIn++;
+                if (swap.fromLine === myLine) swapsOut++;
+            });
+            var currentWorkDays = baseWorkDays + swapsIn - swapsOut;
+            
+            var sortedSwaps = swaps.slice().sort(function(a, b) {
+                return new Date(a.date.replace(/-/g, '/')) - new Date(b.date.replace(/-/g, '/'));
+            });
+            
+            var html = '<!DOCTYPE html><html><head><title>Swap Summary - Line ' + myLine + '</title>' +
+                '<style>' +
+                'body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: 0 auto; }' +
+                'h1 { color: #e94560; border-bottom: 2px solid #e94560; padding-bottom: 10px; }' +
+                'h2 { color: #4ecca3; margin-top: 25px; }' +
+                '.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin: 20px 0; }' +
+                '.stat-box { background: #f5f5f5; padding: 15px; border-radius: 8px; text-align: center; }' +
+                '.stat-value { font-size: 24px; font-weight: bold; }' +
+                '.stat-label { font-size: 11px; color: #666; margin-top: 5px; }' +
+                '.balanced { color: #4ecca3; }' +
+                '.over { color: #e94560; }' +
+                '.under { color: #f0a500; }' +
+                '.swap-table { width: 100%; border-collapse: collapse; margin-top: 15px; }' +
+                '.swap-table th, .swap-table td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; }' +
+                '.swap-table th { background: #f5f5f5; }' +
+                '.take { color: #4ecca3; }' +
+                '.give { color: #e94560; }' +
+                '.partner-swap { color: #9b59b6; }' +
+                '.balance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; }' +
+                '.balance-item { background: #f5f5f5; padding: 12px; border-radius: 5px; display: flex; justify-content: space-between; }' +
+                '@media print { body { padding: 0; } }' +
+                '</style></head><body>';
+            
+            html += '<h1>Swap Summary - Line ' + myLine + ' (' + lineData.lineDesc + ')</h1>';
+            
+            html += '<div class="stats">';
+            html += '<div class="stat-box"><div class="stat-value">' + baseWorkDays + '</div><div class="stat-label">Base Work Days</div></div>';
+            html += '<div class="stat-box"><div class="stat-value">+' + swapsIn + '</div><div class="stat-label">Shifts Taken</div></div>';
+            html += '<div class="stat-box"><div class="stat-value">-' + swapsOut + '</div><div class="stat-label">Shifts Given</div></div>';
+            
+            var balanceClass = currentWorkDays === 152 ? 'balanced' : (currentWorkDays > 152 ? 'over' : 'under');
+            html += '<div class="stat-box"><div class="stat-value ' + balanceClass + '">' + currentWorkDays + '</div><div class="stat-label">Final Work Days</div></div>';
+            html += '</div>';
+            
+            if (currentWorkDays !== 152) {
+                var diff = Math.abs(currentWorkDays - 152);
+                html += '<p style="text-align:center; color:' + (currentWorkDays > 152 ? '#e94560' : '#f0a500') + '; font-weight:bold;">' +
+                    '⚠ ' + (currentWorkDays > 152 ? 'OVER' : 'UNDER') + ' by ' + diff + ' day' + (diff > 1 ? 's' : '') + '</p>';
+            } else {
+                html += '<p style="text-align:center; color:#4ecca3; font-weight:bold;">✓ BALANCED</p>';
+            }
+            
+            // ALL LINES BALANCE SECTION
+            html += '<h2>All Lines Balance</h2>';
+            html += '<div class="balance-grid">';
+            
+            var allLines = [myLine].concat(partners);
+            allLines.forEach(function(lineNbr) {
+                var lCal = ALL_LINES_CALENDAR[lineNbr];
+                var lData = ANNUAL_BID.find(function(l) { return l.lineNbr === lineNbr; });
+                if (!lCal || !lData) return;
+                
+                var lBaseWork = 0;
+                for (var dk in lCal.days) {
+                    if (lCal.days[dk].s !== '--') lBaseWork++;
+                }
+                
+                var lIn = 0, lOut = 0;
+                swaps.forEach(function(s) {
+                    if (s.toLine === lineNbr) lIn++;
+                    if (s.fromLine === lineNbr) lOut++;
+                });
+                
+                var lCurrent = lBaseWork + lIn - lOut;
+                var lBalanceClass = lCurrent === 152 ? 'balanced' : (lCurrent > 152 ? 'over' : 'under');
+                var lBalanceText = lCurrent === 152 ? '✓ ' + lCurrent : (lCurrent > 152 ? '+' + (lCurrent - 152) + ' (' + lCurrent + ')' : '-' + (152 - lCurrent) + ' (' + lCurrent + ')');
+                var isMe = lineNbr === myLine;
+                var displayNum = getDisplayNumber(lineNbr);
+
+                html += '<div class="balance-item" style="' + (isMe ? 'border:2px solid #4ecca3;' : '') + '">';
+                html += '<span>' + (isMe ? '★ ' : '') + 'Line ' + displayNum + '</span>';
+                html += '<span class="' + lBalanceClass + '" style="font-weight:bold;">' + lBalanceText + '</span>';
+                html += '</div>';
+            });
+            html += '</div>';
+            
+            // ALL SWAPS SECTION
+            if (sortedSwaps.length > 0) {
+                html += '<h2>All Swap Details (' + sortedSwaps.length + ' swaps)</h2>';
+                html += '<table class="swap-table"><thead><tr><th>Date</th><th>From</th><th>To</th><th>Shift</th><th>Type</th></tr></thead><tbody>';
+                
+                sortedSwaps.forEach(function(swap) {
+                    var date = new Date(swap.date.replace(/-/g, '/'));
+                    var dateStr = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+                    var involvesMe = swap.fromLine === myLine || swap.toLine === myLine;
+                    var isIncoming = swap.toLine === myLine;
+                    var typeClass = !involvesMe ? 'partner-swap' : (isIncoming ? 'take' : 'give');
+                    var typeText = !involvesMe ? 'Partner↔Partner' : (isIncoming ? '← TAKE' : '→ GIVE');
+                    
+                    html += '<tr>' +
+                        '<td>' + dateStr + '</td>' +
+                        '<td>Line ' + swap.fromLine + '</td>' +
+                        '<td>Line ' + swap.toLine + '</td>' +
+                        '<td>' + swap.shift + '</td>' +
+                        '<td class="' + typeClass + '">' + typeText + '</td>' +
+                    '</tr>';
+                });
+                
+                html += '</tbody></table>';
+            }
+            
+            html += '<h2>Partners (' + partners.length + ')</h2><ul>';
+            if (partners.length === 0) {
+                html += '<li>No partners added</li>';
+            } else {
+                partners.forEach(function(p) {
+                    var pData = ANNUAL_BID.find(function(l) { return l.lineNbr === p; });
+                    html += '<li>Line ' + p + (pData ? ' (' + pData.lineDesc + ')' : '') + '</li>';
+                });
+            }
+            html += '</ul>';
+            
+            html += '<p style="margin-top:30px; color:#888; font-size:11px;">Generated ' + new Date().toLocaleString() + '</p>';
+            html += '</body></html>';
+            
+            var printWindow = window.open('', '_blank');
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.print();
+        }
+    </script>
+</body>
+</html>
