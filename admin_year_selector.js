@@ -56,11 +56,14 @@ const AdminYearSelector = (function() {
 
         const currentYear = BID_CONFIG.getBidYear();
 
+        const activeYear = BID_CONFIG.getActiveBidYear();
+        const isCurrentActive = currentYear === activeYear;
+
         const selectorHTML = `
             <div id="adminYearSelector" class="admin-year-selector" style="
                 position: fixed;
                 top: 10px;
-                right: 200px;
+                right: 120px;
                 z-index: 10000;
                 background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 100%);
                 padding: 8px 15px;
@@ -70,6 +73,7 @@ const AdminYearSelector = (function() {
                 display: flex;
                 align-items: center;
                 gap: 10px;
+                flex-wrap: wrap;
             ">
                 <span style="color: #4ecca3; font-size: 12px; font-weight: bold;">📅 BID YEAR:</span>
                 <select id="bidYearSelect" onchange="AdminYearSelector.changeYear(this.value)" style="
@@ -83,10 +87,22 @@ const AdminYearSelector = (function() {
                 ">
                     ${availableYears.map(year => `
                         <option value="${year}" ${year === currentYear ? 'selected' : ''}>
-                            ${year}-${year + 1}
+                            ${year}-${year + 1}${year === activeYear ? ' (ACTIVE)' : ''}
                         </option>
                     `).join('')}
                 </select>
+                <button id="setActiveYearBtn" onclick="AdminYearSelector.setAsActive()" style="
+                    padding: 6px 12px;
+                    border-radius: 5px;
+                    border: none;
+                    background: ${isCurrentActive ? '#666' : '#f39c12'};
+                    color: ${isCurrentActive ? '#999' : '#1a1a2e'};
+                    font-weight: bold;
+                    font-size: 11px;
+                    cursor: ${isCurrentActive ? 'default' : 'pointer'};
+                " ${isCurrentActive ? 'disabled' : ''}>
+                    ${isCurrentActive ? '✓ ACTIVE FOR USERS' : '⚡ SET ACTIVE FOR USERS'}
+                </button>
                 <span id="yearSelectorStatus" style="color: #888; font-size: 11px;"></span>
             </div>
         `;
@@ -403,11 +419,59 @@ const AdminYearSelector = (function() {
         renderQuickLinks('adminYearQuickLinks');
     }
 
+    /**
+     * Set the current bid year as the active year for all users
+     */
+    async function setAsActive() {
+        const currentYear = BID_CONFIG.getBidYear();
+        const activeYear = BID_CONFIG.getActiveBidYear();
+
+        if (currentYear === activeYear) {
+            alert('This year is already the active year for all users.');
+            return;
+        }
+
+        if (!confirm(`Set ${currentYear}-${currentYear + 1} as the ACTIVE bid year for all users?\n\nAll regular users will see this year when they visit the app.`)) {
+            return;
+        }
+
+        const btn = document.getElementById('setActiveYearBtn');
+        if (btn) {
+            btn.textContent = 'Setting...';
+            btn.disabled = true;
+        }
+
+        try {
+            const success = await BID_CONFIG.setActiveBidYear(currentYear);
+            if (success) {
+                alert(`Success! ${currentYear}-${currentYear + 1} is now the active bid year for all users.\n\nUsers will see this year when they visit the app.`);
+                // Refresh the selector to update button state
+                const selector = document.getElementById('adminYearSelector');
+                if (selector) selector.remove();
+                renderSelector();
+            } else {
+                alert('Failed to set active year. Please try again.');
+                if (btn) {
+                    btn.textContent = '⚡ SET ACTIVE FOR USERS';
+                    btn.disabled = false;
+                }
+            }
+        } catch (err) {
+            console.error('Error setting active year:', err);
+            alert('Error setting active year. Please try again.');
+            if (btn) {
+                btn.textContent = '⚡ SET ACTIVE FOR USERS';
+                btn.disabled = false;
+            }
+        }
+    }
+
     // Public API
     return {
         init,
         renderSelector,
         changeYear,
+        setAsActive,
         getYearURL,
         copyYearLink,
         renderQuickLinks,

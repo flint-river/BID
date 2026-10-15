@@ -25,6 +25,14 @@
         // Step 1: Check if user is admin (from session storage)
         const isAdminAuthenticated = sessionStorage.getItem('polish_bid_admin') === 'true';
 
+        // Step 1.5: Fetch active bid year from Firebase (admin-set default)
+        // This determines which year regular users see
+        try {
+            await BID_CONFIG.fetchActiveBidYear();
+        } catch (err) {
+            console.log('[BID_APP] Could not fetch active year, using fallback');
+        }
+
         // Step 2: Initialize BID_CONFIG with admin status
         const config = BID_CONFIG.init(isAdminAuthenticated);
         console.log(`[BID_APP] Configured for Bid Year ${config.bidYear}`);

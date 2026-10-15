@@ -12,15 +12,71 @@
 const BID_CONFIG = (function() {
     'use strict';
 
-    // Default bid year (can be overridden by admin via URL param)
-    const DEFAULT_BID_YEAR = 2026;
+    // Fallback bid year if Firebase setting not available
+    const FALLBACK_BID_YEAR = 2027;
 
     // Firebase base URL (without year-specific path)
     const FIREBASE_BASE_URL = 'https://bid2026-58308-default-rtdb.firebaseio.com';
 
     // Current bid year (determined at runtime)
-    let currentBidYear = DEFAULT_BID_YEAR;
+    let currentBidYear = FALLBACK_BID_YEAR;
+    let activeBidYear = null; // The year set by admin for all users
     let isAdminMode = false;
+
+    /**
+     * Fetch the active bid year from Firebase (set by admin)
+     * Call this before init() to get the admin-set default
+     */
+    async function fetchActiveBidYear() {
+        try {
+            const response = await fetch(`${FIREBASE_BASE_URL}/settings/activeBidYear.json`);
+            if (response.ok) {
+                const year = await response.json();
+                if (year && isValidBidYear(year)) {
+                    activeBidYear = year;
+                    currentBidYear = year;
+                    console.log(`[BID_CONFIG] Active bid year from Firebase: ${year}`);
+                    return year;
+                }
+            }
+        } catch (err) {
+            console.log('[BID_CONFIG] Could not fetch active bid year, using fallback');
+        }
+        return FALLBACK_BID_YEAR;
+    }
+
+    /**
+     * Set the active bid year for all users (admin only)
+     * Saves to Firebase so all users see this year by default
+     */
+    async function setActiveBidYear(year) {
+        if (!isValidBidYear(year)) {
+            console.error(`[BID_CONFIG] Invalid bid year: ${year}`);
+            return false;
+        }
+        try {
+            const response = await fetch(`${FIREBASE_BASE_URL}/settings/activeBidYear.json`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(year)
+            });
+            if (response.ok) {
+                activeBidYear = year;
+                console.log(`[BID_CONFIG] Active bid year set to ${year} for all users`);
+                return true;
+            }
+        } catch (err) {
+            console.error('[BID_CONFIG] Failed to set active bid year:', err);
+        }
+        return false;
+    }
+
+    /**
+     * Get the active bid year (set by admin for all users)
+     */
+    function getActiveBidYear() {
+        return activeBidYear || currentBidYear;
+    }
 
     /**
      * Initialize configuration
@@ -244,6 +300,9 @@ const BID_CONFIG = (function() {
     // Public API
     return {
         init,
+        fetchActiveBidYear,
+        setActiveBidYear,
+        getActiveBidYear,
         getBidYear,
         setBidYear,
         getFirebaseUrl,
@@ -259,7 +318,7 @@ const BID_CONFIG = (function() {
         getDisplayTitle,
         getShortDisplay,
         isValidBidYear,
-        DEFAULT_BID_YEAR
+        FALLBACK_BID_YEAR
     };
 })();
 
