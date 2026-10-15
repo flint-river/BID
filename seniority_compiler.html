@@ -125,6 +125,8 @@
     </style>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="BID_CONFIG.js"></script>
+    <script src="bid_year_integration.js"></script>
 </head>
 <body>
     <div id="passwordModal" class="modal show">
@@ -142,6 +144,7 @@
         <div class="header">
             <h1>📋 Seniority List Compiler</h1>
             <p>Build and manage GROUP1 (SSOM) and GROUP2 (SOM) seniority lists</p>
+            <div id="bidYearSelector" style="margin-top: 10px;"></div>
         </div>
 
         <div class="container">
@@ -291,12 +294,64 @@
         const firebaseConfig = { apiKey: "AIzaSyDD7V8bTZK8q7ADvR7rx56n9UDZs5O7PjU", authDomain: "bid2026-58308.firebaseapp.com", databaseURL: "https://bid2026-58308-default-rtdb.firebaseio.com", projectId: "bid2026-58308" };
         firebase.initializeApp(firebaseConfig);
 
+        // Initialize BID_CONFIG for multi-year support
+        const config = BID_CONFIG.init(true); // Always admin mode in seniority compiler
+        console.log(`[SeniorityCompiler] Configured for Bid Year ${config.bidYear}`);
+
         let seniorityData = [], previousData = [], currentFilter = 'all', searchTerm = '', hasPreviousData = false;
         let changestoReview = []; // Track PAFCA changes that need review
+
+        // Helper function to get Firebase URLs based on current bid year
+        function getFirebaseUrl() {
+            return BID_CONFIG.getFirebaseUrl();
+        }
+
+        function getSeniorityPath() {
+            return BidYearIntegration.getSeniorityPath();
+        }
+
+        function getBidDataPath() {
+            return BidYearIntegration.getFirebaseDataPath('all');
+        }
+
+        // Initialize bid year selector
+        function initBidYearSelector() {
+            const selector = document.getElementById('bidYearSelector');
+            if (!selector) return;
+
+            const currentYear = BID_CONFIG.getBidYear();
+            const years = [2026, 2027, 2028, 2029, 2030];
+
+            selector.innerHTML = `
+                <label style="color: #888; margin-right: 10px;">Setting up seniority for:</label>
+                <select id="bidYearSelect" onchange="changeBidYear(this.value)" style="
+                    padding: 8px 16px;
+                    font-size: 14px;
+                    border: 1px solid #4ecca3;
+                    border-radius: 4px;
+                    background: #1a1a2e;
+                    color: #4ecca3;
+                    font-weight: bold;
+                    cursor: pointer;
+                ">
+                    ${years.map(y => `<option value="${y}" ${y === currentYear ? 'selected' : ''}>${y}-${y+1} Bid Year</option>`).join('')}
+                </select>
+                <span style="margin-left: 15px; color: #f39c12; font-size: 12px;">
+                    📁 Data path: <code style="background: #0f3460; padding: 2px 6px; border-radius: 3px;">${getSeniorityPath()}</code>
+                </span>
+            `;
+        }
+
+        function changeBidYear(year) {
+            const url = new URL(window.location);
+            url.searchParams.set('bidYear', year);
+            window.location.href = url.toString();
+        }
 
         if (sessionStorage.getItem('polish_bid_admin') === 'true') {
             document.getElementById('passwordModal').classList.remove('show');
             document.getElementById('mainContent').classList.remove('hidden');
+            initBidYearSelector();
         }
 
         async function checkPassword() {
@@ -308,6 +363,7 @@
                 sessionStorage.setItem('polish_bid_admin', 'true');
                 document.getElementById('passwordModal').classList.remove('show');
                 document.getElementById('mainContent').classList.remove('hidden');
+                initBidYearSelector();
             } catch (e) { errorDiv.textContent = 'Incorrect password'; errorDiv.style.color = '#e94560'; }
         }
 
@@ -707,9 +763,14 @@
             
             try {
                 // Step 1: Load current seniority and assignments from Firebase
+                const baseUrl = getFirebaseUrl();
+                const seniorityPath = getSeniorityPath();
+                const bidDataPath = getBidDataPath();
+                console.log(`[SeniorityCompiler] Loading from: ${seniorityPath} and ${bidDataPath}`);
+
                 const [seniorityRes, bidRes] = await Promise.all([
-                    fetch('https://bid2026-58308-default-rtdb.firebaseio.com/seniority.json'),
-                    fetch('https://bid2026-58308-default-rtdb.firebaseio.com/bid.json')
+                    fetch(`${baseUrl}${seniorityPath}`),
+                    fetch(`${baseUrl}${bidDataPath}`)
                 ]);
                 
                 let oldGroup1 = [];
@@ -816,7 +877,8 @@
                 
                 // Step 4: Save everything to Firebase
                 // Save new seniority
-                await fetch('https://bid2026-58308-default-rtdb.firebaseio.com/seniority.json', {
+                console.log(`[SeniorityCompiler] Saving to: ${seniorityPath}`);
+                await fetch(`${baseUrl}${seniorityPath}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -827,9 +889,10 @@
                         somCount: somList.length
                     })
                 });
-                
+
                 // Save migrated bid data
-                await fetch('https://bid2026-58308-default-rtdb.firebaseio.com/bid.json', {
+                console.log(`[SeniorityCompiler] Saving bid data to: ${bidDataPath}`);
+                await fetch(`${baseUrl}${bidDataPath}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -842,13 +905,15 @@
                     })
                 });
                 
-                statusDiv.innerHTML = `<span style="color:#2ecc71;">✅ Published successfully!</span><br>
+                const bidYear = BID_CONFIG.getBidYear();
+                statusDiv.innerHTML = `<span style="color:#2ecc71;">✅ Published successfully to ${bidYear}-${bidYear+1} Bid Year!</span><br>
                     <span style="font-size:12px; color:#888;">
+                    <strong>Saved to:</strong> ${seniorityPath}<br>
                     <strong>Seniority:</strong> SSOM: ${ssomList.length} | SOM: ${somList.length}<br>
                     <strong>Assignments migrated:</strong> ${migratedCount} lines followed their people<br>
                     <strong>Confirmations:</strong> ${Object.keys(newConfirmations).length} preserved<br>
                     <br>
-                    Refresh the bid app to see the changes.</span>`;
+                    Refresh the bid app with <code>?bidYear=${bidYear}</code> to see the changes.</span>`;
                 
                 updateWorkflowStatus(5);
                 

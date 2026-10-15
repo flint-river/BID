@@ -5323,8 +5323,13 @@ const ANNUAL_BID = ${JSON.stringify(setupData.linePatterns, null, 2)};
     }
     
     async function clearFirebaseData() {
+        // Use dynamic Firebase path based on bid year
+        const dataPath = (typeof BidYearIntegration !== 'undefined')
+            ? BidYearIntegration.getFirebaseDataPath('all')
+            : '/bid.json';
+
         try {
-            await fetch(`${FIREBASE_URL}/bid.json`, {
+            await fetch(`${FIREBASE_URL}${dataPath}`, {
                 method: 'DELETE'
             });
             
