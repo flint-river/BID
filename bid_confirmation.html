@@ -3,9 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bid Confirmation - Polish Bid 2026-2027</title>
+    <title>Bid Confirmation - Loading...</title>
     <link rel="stylesheet" href="bidding.css">
     <style>
+        /* Hide everything until JS loads */
+        .page-content { display: none; }
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            color: #4ecca3;
+        }
+        .loading-overlay .spinner {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
         .confirmation-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -181,10 +203,16 @@
     </style>
 </head>
 <body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner">⏳</div>
+        <div>Loading bid data...</div>
+    </div>
+
+    <div class="page-content" id="pageContent">
     <div class="header">
         <div class="header-content">
             <h1>Bid Confirmation Status</h1>
-            <p>Polish Bid 2026-2027 | Track confirmed line assignments</p>
+            <p id="headerSubtitle">Loading...</p>
         </div>
     </div>
 
@@ -252,6 +280,7 @@
             <button class="btn btn-secondary" onclick="hidePasswordModal()" style="width:100%; padding:12px; margin-top:10px;">Cancel</button>
         </div>
     </div>
+    </div><!-- end page-content -->
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -261,15 +290,7 @@
     <script src="bid_year_integration.js"></script>
 
     <script>
-        // Update page title/header dynamically
-        document.addEventListener('DOMContentLoaded', function() {
-            var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
-            document.title = 'Bid Confirmation - Polish Bid ' + bidYear + '-' + (bidYear + 1);
-            var headerP = document.querySelector('.header-content p');
-            if (headerP) {
-                headerP.textContent = 'Polish Bid ' + bidYear + '-' + (bidYear + 1) + ' | Track confirmed line assignments';
-            }
-        });
+        // Page title/header will be updated after fetching active year
 
         // Firebase Configuration
         const firebaseConfig = {
@@ -450,16 +471,24 @@
 
         async function loadData() {
             updateSyncStatus('syncing', 'Loading...');
-            
+
+            // Get dynamic path based on bid year
+            const bidYear = BID_CONFIG.getBidYear();
+            const dataPath = (typeof BidYearIntegration !== 'undefined')
+                ? BidYearIntegration.getFirebaseDataPath('all').replace('.json', '')
+                : '/bid';
+
+            console.log('Loading data from: ' + dataPath);
+
             try {
-                // Load assignments (from bid/assignments to match main page)
-                const assignSnap = await database.ref('bid/assignments').once('value');
+                // Load assignments using dynamic path
+                const assignSnap = await database.ref(dataPath + '/assignments').once('value');
                 assignments = assignSnap.val() || {};
-                
-                // Load confirmations
-                const confSnap = await database.ref('bid/confirmations').once('value');
+
+                // Load confirmations using dynamic path
+                const confSnap = await database.ref(dataPath + '/confirmations').once('value');
                 confirmations = confSnap.val() || {};
-                
+
                 renderList();
                 updateStats();
                 updateSyncStatus('connected', 'Connected');
@@ -569,11 +598,16 @@
 
         async function toggleConfirmation(key, confirmed) {
             if (!isAdmin) return;
-            
+
             updateSyncStatus('syncing', 'Saving...');
-            
+
+            // Get dynamic path based on bid year
+            const dataPath = (typeof BidYearIntegration !== 'undefined')
+                ? BidYearIntegration.getFirebaseDataPath('all').replace('.json', '')
+                : '/bid';
+
             try {
-                await database.ref(`bid/confirmations/${key}`).set(confirmed);
+                await database.ref(`${dataPath}/confirmations/${key}`).set(confirmed);
                 confirmations[key] = confirmed;
                 renderList();
                 updateStats();
@@ -615,13 +649,18 @@
 
         // Listen for real-time updates
         function setupRealtimeListeners() {
-            database.ref('bid/assignments').on('value', (snapshot) => {
+            // Get dynamic path based on bid year
+            const dataPath = (typeof BidYearIntegration !== 'undefined')
+                ? BidYearIntegration.getFirebaseDataPath('all').replace('.json', '')
+                : '/bid';
+
+            database.ref(dataPath + '/assignments').on('value', (snapshot) => {
                 assignments = snapshot.val() || {};
                 renderList();
                 updateStats();
             });
-            
-            database.ref('bid/confirmations').on('value', (snapshot) => {
+
+            database.ref(dataPath + '/confirmations').on('value', (snapshot) => {
                 confirmations = snapshot.val() || {};
                 renderList();
                 updateStats();
@@ -649,10 +688,22 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            // Fetch active bid year first (this also calls BID_CONFIG.init)
             await loadSeniorityLists();
+
+            // Update page title and header with correct bid year
+            var bidYear = BID_CONFIG.getBidYear();
+            document.title = 'Bid Confirmation - Polish Bid ' + bidYear + '-' + (bidYear + 1);
+            document.getElementById('headerSubtitle').textContent =
+                'Polish Bid ' + bidYear + '-' + (bidYear + 1) + ' | Track confirmed line assignments';
+
             checkExistingSession();
-            loadData();
+            await loadData();
             setupRealtimeListeners();
+
+            // Hide loading overlay and show content
+            document.getElementById('loadingOverlay').style.display = 'none';
+            document.getElementById('pageContent').style.display = 'block';
         });
     </script>
 </body>
