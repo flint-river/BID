@@ -255,10 +255,54 @@
     }
 
     /**
-     * Load patterns from JSON file or Firebase
+     * Load patterns from Firebase first, then fall back to static file
      */
     async function loadPatterns(url = 'patterns.json') {
-        // Try local file first
+        // Try Firebase FIRST (for dynamic updates from admin)
+        try {
+            const firebaseUrl = (typeof BID_CONFIG !== 'undefined')
+                ? BID_CONFIG.getFirebaseUrl()
+                : 'https://bid2026-58308-default-rtdb.firebaseio.com';
+
+            const patternsPath = (typeof BidYearIntegration !== 'undefined')
+                ? BidYearIntegration.getPatternsPath()
+                : '/patterns.json';
+
+            console.log(`[PatternLoader] Checking Firebase for patterns: ${patternsPath}`);
+            const response = await fetch(`${firebaseUrl}${patternsPath}`);
+
+            if (response.ok) {
+                const firebaseData = await response.json();
+
+                if (firebaseData && firebaseData.data && firebaseData.data.length > 0) {
+                    // Firebase stores pre-transformed data
+                    window.ANNUAL_BID = firebaseData.data;
+                    window.PATTERN_METADATA = firebaseData.metadata || {};
+                    window.PATTERN_METADATA.source = 'firebase';
+
+                    // Handle seasonal desks from Firebase
+                    window.SEASONAL_DESKS = firebaseData.metadata?.seasonalDesks || [];
+                    if (window.SEASONAL_DESKS.length > 0) {
+                        console.log(`[PatternLoader] Loaded ${window.SEASONAL_DESKS.length} seasonal desk(s) from Firebase`);
+                    }
+
+                    console.log(`[PatternLoader] Loaded ${firebaseData.data.length} lines from Firebase`);
+
+                    window.dispatchEvent(new CustomEvent('patternsLoaded', {
+                        detail: {
+                            lineCount: firebaseData.data.length,
+                            source: 'firebase'
+                        }
+                    }));
+
+                    return firebaseData.data;
+                }
+            }
+        } catch (err) {
+            console.log('[PatternLoader] Firebase not available, trying local file...', err.message);
+        }
+
+        // Fall back to local static file
         try {
             console.log(`[PatternLoader] Loading patterns from ${url}...`);
             const response = await fetch(url);
@@ -303,45 +347,7 @@
                 return annualBid;
             }
         } catch (err) {
-            console.log('[PatternLoader] Local file not found, trying Firebase...');
-        }
-
-        // Try Firebase
-        try {
-            const firebaseUrl = (typeof BID_CONFIG !== 'undefined')
-                ? BID_CONFIG.getFirebaseUrl()
-                : 'https://bid2026-58308-default-rtdb.firebaseio.com';
-
-            const patternsPath = (typeof BidYearIntegration !== 'undefined')
-                ? BidYearIntegration.getPatternsPath()
-                : '/patterns.json';
-
-            console.log(`[PatternLoader] Loading from Firebase: ${patternsPath}`);
-            const response = await fetch(`${firebaseUrl}${patternsPath}`);
-
-            if (response.ok) {
-                const firebaseData = await response.json();
-
-                if (firebaseData && firebaseData.data && firebaseData.data.length > 0) {
-                    // Firebase stores pre-transformed data
-                    window.ANNUAL_BID = firebaseData.data;
-                    window.PATTERN_METADATA = firebaseData.metadata || {};
-                    window.PATTERN_METADATA.source = 'firebase';
-
-                    console.log(`[PatternLoader] Loaded ${firebaseData.data.length} lines from Firebase`);
-
-                    window.dispatchEvent(new CustomEvent('patternsLoaded', {
-                        detail: {
-                            lineCount: firebaseData.data.length,
-                            source: 'firebase'
-                        }
-                    }));
-
-                    return firebaseData.data;
-                }
-            }
-        } catch (err) {
-            console.log('[PatternLoader] Firebase load failed:', err.message);
+            console.log('[PatternLoader] Local file load failed:', err.message);
         }
 
         // Check if there's a fallback ANNUAL_BID already defined
