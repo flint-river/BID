@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bid Times</title>
     <script src="BID_CONFIG.js"></script>
+    <script src="bid_year_integration.js"></script>
     <style>
         * {
             margin: 0;
@@ -666,32 +667,45 @@
     </div>
 
     <script>
-        // Personnel data for bid schedule
-        var SSOM_PERSONNEL = [
-            'COST, BOB', 'BRET, KEN', 'ASTL, JOE', 'PAWL, CHR', 'BELF, VIN',
-            'JOHN, BRI', 'SMIT, DAV', 'CAMP, KEV', 'RECK, JAS', 'DONA, JEF',
-            'ADAM, MAR', 'SCHA, DAV', 'EMER, JES', 'GRAF, BEN'
-        ];
+        // Personnel data - loaded dynamically from Firebase
+        var SSOM_PERSONNEL = [];
+        var SOM_PERSONNEL = [];
 
-        var SOM_PERSONNEL = [
-            'BIRD, DAN', 'FRAN, DAV', 'CHAR, CAR', 'SPRA, PER', 'OLSE, ED',
-            'HARR, JIM', 'BAIL, RIC', 'CLAR, JUD', 'GWIN, BRI', 'DANI, JEF',
-            'SMIT, BAR', 'RIEL, WAL', 'ROHL, MIK', 'HOUC, DAV', 'STAN, LAN',
-            'HOBS, MAR', 'HOFF, DAN', 'BAKE, ERI', 'PUSZ, JIM', 'HARA, DUD',
-            'BATT, JAI', 'SUCH, CHR', '(VACANT)', 'HURL, JAC', 'MCEL, KEV',
-            'REED, MIK', 'FUJI, ROX', 'O\'DO, BRI', 'HAMI, ADA', 'GEIG, GEO',
-            'O\'DO, WEN', 'ESTE, KAT', 'RINE, RAL', 'ROMA, KEN', 'HALL, CHA',
-            'LONG, AND', 'PAPP, ROB', 'GAGN, JUL', 'MALE, TOD', 'MISN, HUO',
-            'O\'BR, DAV', 'DELA, WIL', 'BETC, MIC', 'JOLL, DAV', 'TOZZ, GIN',
-            'MCMO, SHA', 'RUCK, RIC', 'WARN, DEE', 'HENE, AND', 'OSOJ, MER',
-            'FOLE, RYA', 'HILL, SEA', 'MUGE, JEN', 'DENM, JOH', 'MAKI, RYA',
-            'MCGR, DEA', 'BRAD, LAT', 'HATL, HER', 'HAYE, JOH', 'HARR, ELE',
-            'PIOT, MAR', 'CART, WES', 'GAUL, PET', 'BOST, GRE', 'HINT, SEL',
-            'TJAD, AND', 'GEUR, STE', 'KENT, AND', 'SAMU, CHA', 'CORN, DAN',
-            'FATT, KEL', 'STAR, JIM', 'ALLE, JOS', 'LATT, WIL', 'TURI, LAU',
-            'AUST, STE', 'RAIN, MIK', 'MILL, CRA', 'LITT, CLA', 'PIER, MAR',
-            'HARN, ZAC'
-        ];
+        // Load seniority from Firebase
+        async function loadSeniorityLists() {
+            // Fetch active bid year first
+            try {
+                await BID_CONFIG.fetchActiveBidYear();
+            } catch (err) {
+                console.log('Could not fetch active year, using fallback');
+            }
+            BID_CONFIG.init(false);
+
+            // Use dynamic seniority path based on bid year
+            var baseUrl = BID_CONFIG.getFirebaseUrl();
+            var seniorityPath = (typeof BidYearIntegration !== 'undefined')
+                ? BidYearIntegration.getSeniorityPath()
+                : '/seniority.json';
+
+            console.log('Loading seniority from: ' + seniorityPath);
+
+            try {
+                var response = await fetch(baseUrl + seniorityPath);
+                if (response.ok) {
+                    var data = await response.json();
+                    if (data && data.GROUP1 && data.GROUP1.length > 0) {
+                        SSOM_PERSONNEL = data.GROUP1.map(function(p) { return p.name; });
+                        SOM_PERSONNEL = (data.GROUP2 || []).map(function(p) { return p.name; });
+                        console.log('Loaded seniority: SSOM=' + SSOM_PERSONNEL.length + ', SOM=' + SOM_PERSONNEL.length);
+                        return true;
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load seniority:', err);
+            }
+            console.warn('No seniority data found - page will be empty');
+            return false;
+        }
 
         function getBidStartDate() {
             var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
@@ -741,7 +755,10 @@
             return currentTime;
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Load seniority from Firebase first
+            await loadSeniorityLists();
+
             var bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
             var bidStartDate = getBidStartDate();
 
