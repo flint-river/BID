@@ -3421,11 +3421,10 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
         <button onclick="printYearOverview()">Print Year Overview</button>
     </div>
     <div class="instructions no-print">
-        <b>EDIT MODE:</b> Click any cell to type directly, or drag & drop items from the palettes below.
-        <b>Shifts:</b> Prompts for Regular/SWAP/OT/DT. <b>COMP WK:</b> Select a desk. <b>SPEC/TRN:</b> Choose COMP or OT.
-        <b>SWAP MODE:</b> Click button to toggle. Double-click your cell (red border), then click comparison cell = give them your shift.
-        <b>Compare:</b> Select coworker's line → Load. Drag their shifts (orange row) to your line = receive their shift.
-        <b>UNDO/REDO</b> navigate changes. <b>RESET</b> restores original. <b>Save:</b> Ctrl+S to download.
+        <b>Edit cells:</b> Click any cell to type, or drag from palettes. Shifts prompt for Regular/SWAP/OT/DT.
+        <b>Receive shift:</b> Load a comparison line (orange), then drag THEIR shift to YOUR cell = auto-swap.
+        <b>Give shift:</b> Click "Give Shift Mode" button, double-click YOUR cell (red border), click THEIR cell = you give it up.
+        <b>UNDO/REDO/RESET</b> for changes. <b>Ctrl+S</b> to download.
     </div>
     <div class="drag-palette no-print">
         <span style="font-weight:bold; margin-right:5px;">Time Off:</span>
@@ -3444,8 +3443,8 @@ ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e
         <button onclick="undoChange()" class="edit-btn" title="Undo">↩ UNDO</button>
         <button onclick="redoChange()" class="edit-btn" title="Redo">↪ REDO</button>
         <button onclick="resetToOriginal()" class="edit-btn reset-btn" title="Reset to Original">🔄 RESET</button>
-        <button id="swapModeBtn" onclick="toggleSwapMode()" class="edit-btn" style="background:#3498db; margin-left:10px;" title="Toggle between Edit and Swap modes">📝 EDIT MODE</button>
-        <span id="modeStatus" style="display:none; margin-left:10px; padding:5px 12px; border-radius:4px; color:#fff; font-weight:bold; font-size:11px;">EDIT MODE</span>
+        <button id="swapModeBtn" onclick="toggleSwapMode()" class="edit-btn" style="background:#9b59b6; margin-left:10px;" title="Switch to Give Shift mode to give your shifts to comparison line">🔄 Give Shift Mode</button>
+        <span id="modeStatus" style="display:none; margin-left:10px; padding:5px 12px; border-radius:4px; color:#fff; font-size:11px;"></span>
         <span style="margin-left:20px; border-left:2px solid #999; padding-left:15px;">
             <b>Compare with:</b>
             <select id="compareLineSelect" style="padding:4px; min-width:180px;" onchange="previewComparisonLine()">
@@ -3763,7 +3762,7 @@ var draggedSourceCell = null;  // Track source cell for swap-off marking
 
 // Click-to-swap functionality (alternative to drag for main-to-comparison swaps)
 var selectedMainCell = null;
-var swapMode = false;  // false = Edit Mode, true = Swap Mode
+var swapMode = false;  // false = Edit Mode, true = Give Shift Mode
 
 function toggleSwapMode() {
     swapMode = !swapMode;
@@ -3772,23 +3771,21 @@ function toggleSwapMode() {
     var cells = document.querySelectorAll('.shift-cell');
 
     if (swapMode) {
-        btn.textContent = '🔄 SWAP MODE';
-        btn.style.background = '#e74c3c';
-        status.textContent = 'SWAP MODE: Double-click your cell, then click comparison cell to give shift';
+        // Entering GIVE SHIFT mode
+        btn.innerHTML = '✏️ Back to Edit';
+        btn.style.background = '#27ae60';
+        status.innerHTML = '<b>GIVE SHIFT MODE</b> - Double-click YOUR cell, then click THEIR cell';
         status.style.background = '#e74c3c';
-        status.style.display = 'block';
-        // Disable editing in swap mode
+        status.style.display = 'inline-block';
         for (var i = 0; i < cells.length; i++) {
             cells[i].setAttribute('contenteditable', 'false');
             cells[i].style.cursor = 'pointer';
         }
     } else {
-        btn.textContent = '📝 EDIT MODE';
-        btn.style.background = '#3498db';
-        status.textContent = 'EDIT MODE: Click cells to type, drag from palettes to add';
-        status.style.background = '#3498db';
-        status.style.display = 'block';
-        // Enable editing in edit mode
+        // Back to EDIT mode
+        btn.innerHTML = '🔄 Give Shift Mode';
+        btn.style.background = '#9b59b6';
+        status.style.display = 'none';
         for (var i = 0; i < cells.length; i++) {
             cells[i].setAttribute('contenteditable', 'true');
             cells[i].style.cursor = 'text';
@@ -3798,10 +3795,6 @@ function toggleSwapMode() {
             selectedMainCell.classList.remove('swap-selected');
             selectedMainCell = null;
         }
-        // Hide status after 3 seconds in edit mode
-        setTimeout(function() {
-            if (!swapMode) status.style.display = 'none';
-        }, 3000);
     }
 }
 
