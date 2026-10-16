@@ -4402,35 +4402,34 @@ function isLineConfirmed(lineNbr) {
         html += '<h2>Holiday Schedule</h2>';
         html += '<div class="holidays">';
 
-        // Use dynamic HOLIDAYS from the current bid year
+        // Use HOLIDAY_PATTERN_MAP which has full holiday info (name, date, etc.)
+        var patternMap = window.HOLIDAY_PATTERN_MAP || {};
         var holidayList = [];
-        var holidaysObj = window.HOLIDAYS || HOLIDAYS || {};
 
-        // Convert HOLIDAYS object to sorted array
-        Object.keys(holidaysObj).forEach(function(dateStr) {
-            var h = holidaysObj[dateStr];
-            holidayList.push({
-                date: dateStr,
-                name: h.name || h.abbrev || dateStr
-            });
+        // Convert pattern map to sorted array
+        Object.keys(patternMap).forEach(function(abbrev) {
+            var h = patternMap[abbrev];
+            if (h && h.date) {
+                holidayList.push({
+                    abbrev: abbrev,
+                    date: h.date,
+                    name: h.name || abbrev,
+                    fullDate: h.fullDate || h.date
+                });
+            }
         });
 
         // Sort by date
         holidayList.sort(function(a, b) {
-            return new Date(a.date) - new Date(b.date);
+            return new Date(a.date.replace(/-/g, '/')) - new Date(b.date.replace(/-/g, '/'));
         });
 
         holidayList.forEach(function(h) {
             var dayData = calendar.days[h.date];
             var isOff = dayData && dayData.s === '--';
 
-            // Format date nicely (e.g., "Apr 20, 2027")
-            var dateObj = new Date(h.date.replace(/-/g, '/'));
-            var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            var formattedDate = monthNames[dateObj.getMonth()] + ' ' + dateObj.getDate() + ', ' + dateObj.getFullYear();
-
             html += '<div class="holiday-row">' +
-                '<span>' + h.name + ' <span style="color:#888; font-size:11px;">(' + formattedDate + ')</span></span>' +
+                '<span>' + h.name + ' <span style="color:#888; font-size:11px;">(' + h.fullDate + ')</span></span>' +
                 '<span class="' + (isOff ? 'holiday-off' : 'holiday-work') + '">' + (isOff ? '✓ OFF' : (dayData ? dayData.s : 'WORK')) + '</span>' +
             '</div>';
         });
