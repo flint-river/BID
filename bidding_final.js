@@ -2767,7 +2767,147 @@ function isLineConfirmed(lineNbr) {
             exportLineToICS(currentCalendarLine);
         }
     }
-    
+
+    function exportCurrentLineExcel() {
+        if (currentCalendarLine) {
+            exportLineToExcel(currentCalendarLine);
+        }
+    }
+
+    function exportLineToExcel(lineNbr) {
+        const calData = ALL_LINES_CALENDAR[lineNbr];
+        if (!calData) {
+            alert('Calendar data not found for line ' + lineNbr);
+            return;
+        }
+
+        const lineData = ANNUAL_BID.find(l => l.lineNbr === lineNbr || l.lineNbr === String(lineNbr));
+        if (!lineData) {
+            alert('Line data not found');
+            return;
+        }
+
+        const bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
+        const displayNum = lineData.lineNbr;
+        const lineType = lineData.lineDesc || 'Unknown';
+
+        // Create workbook
+        const wb = XLSX.utils.book_new();
+
+        // Sheet 1: Calendar Data
+        const calendarRows = [];
+
+        // Header row
+        calendarRows.push(['Line ' + displayNum + ' (' + lineType + ') - ' + bidYear + '-' + (bidYear + 1) + ' Schedule']);
+        calendarRows.push([]); // Empty row
+        calendarRows.push(['Date', 'Day of Week', 'Shift', 'Holiday']);
+
+        // Get holiday info
+        const holidaysObj = window.HOLIDAYS || {};
+        const patternMap = window.HOLIDAY_PATTERN_MAP || {};
+
+        // Sort dates and add rows
+        const sortedDates = Object.keys(calData.days).sort((a, b) => {
+            return new Date(a.replace(/-/g, '/')) - new Date(b.replace(/-/g, '/'));
+        });
+
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        sortedDates.forEach(dateStr => {
+            const dayData = calData.days[dateStr];
+            const dateObj = new Date(dateStr.replace(/-/g, '/'));
+            const dayOfWeek = dayNames[dateObj.getDay()];
+            const shift = dayData.s || '--';
+
+            // Check if it's a holiday
+            let holidayName = '';
+            const holidayAbbrev = holidaysObj[dateStr];
+            if (holidayAbbrev && patternMap[holidayAbbrev]) {
+                holidayName = patternMap[holidayAbbrev].name || holidayAbbrev;
+            }
+
+            // Format date nicely
+            const formattedDate = dateObj.toLocaleDateString('en-US', {
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric'
+            });
+
+            calendarRows.push([formattedDate, dayOfWeek, shift, holidayName]);
+        });
+
+        const ws1 = XLSX.utils.aoa_to_sheet(calendarRows);
+
+        // Set column widths
+        ws1['!cols'] = [
+            { wch: 20 }, // Date
+            { wch: 12 }, // Day of Week
+            { wch: 10 }, // Shift
+            { wch: 20 }  // Holiday
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws1, 'Schedule');
+
+        // Sheet 2: Summary
+        const summaryRows = [];
+        summaryRows.push(['Line ' + displayNum + ' Summary']);
+        summaryRows.push([]);
+        summaryRows.push(['Line Type:', lineType]);
+        summaryRows.push(['Bid Year:', bidYear + '-' + (bidYear + 1)]);
+        summaryRows.push([]);
+
+        // Calculate stats
+        let workDays = 0, offDays = 0, holidaysOff = 0;
+        sortedDates.forEach(dateStr => {
+            const dayData = calData.days[dateStr];
+            if (dayData.s === '--') {
+                offDays++;
+                if (holidaysObj[dateStr]) holidaysOff++;
+            } else {
+                workDays++;
+            }
+        });
+
+        summaryRows.push(['Statistics:']);
+        summaryRows.push(['Work Days:', workDays]);
+        summaryRows.push(['Off Days:', offDays]);
+        summaryRows.push(['Holidays Off:', holidaysOff + ' of 12']);
+        summaryRows.push([]);
+
+        // 12-Day Pattern
+        summaryRows.push(['12-Day Pattern:']);
+        summaryRows.push(['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7', 'Day 8', 'Day 9', 'Day 10', 'Day 11', 'Day 12']);
+        summaryRows.push(lineData.days);
+        summaryRows.push([]);
+
+        // Holiday Schedule
+        summaryRows.push(['Holiday Schedule:']);
+        summaryRows.push(['Holiday', 'Date', 'Status']);
+
+        Object.keys(patternMap).forEach(abbrev => {
+            const h = patternMap[abbrev];
+            if (h && h.date) {
+                const dayData = calData.days[h.date];
+                const isOff = dayData && dayData.s === '--';
+                summaryRows.push([h.name || abbrev, h.fullDate || h.date, isOff ? 'OFF' : 'WORK']);
+            }
+        });
+
+        const ws2 = XLSX.utils.aoa_to_sheet(summaryRows);
+        ws2['!cols'] = [
+            { wch: 15 },
+            { wch: 15 },
+            { wch: 10 }
+        ];
+
+        XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
+
+        // Download the file
+        const fileName = 'Line_' + displayNum + '_' + bidYear + '-' + (bidYear + 1) + '.xlsx';
+        XLSX.writeFile(wb, fileName);
+    }
+
     function printCurrentLineSummary() {
         if (currentCalendarLine) {
             printBidSummary(currentCalendarLine);

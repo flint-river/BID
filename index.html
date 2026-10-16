@@ -203,6 +203,7 @@
                     <button class="btn btn-legend" onclick="toggleCalendarView()" style="margin-right:10px; background:#9b59b6; color:white;">📅 Toggle View</button>
                     <button class="btn btn-legend" onclick="copyCalendarLink()" style="margin-right:10px;">🔗 Copy Link</button>
                     <button class="btn" onclick="exportCurrentLineICS()" style="margin-right:10px; background:#4ecca3; color:#1a1a2e;">📥 Export ICS</button>
+                    <button class="btn" onclick="exportCurrentLineExcel()" style="margin-right:10px; background:#217346; color:white;">📊 Export Excel</button>
                     <button class="btn" onclick="printCurrentLineSummary()" style="margin-right:10px; background:#2563eb; color:white;">📄 Summary</button>
                     <button class="btn" onclick="printCalendar()" style="margin-right:10px;">🖨️ Print</button>
                     <button class="modal-close" onclick="hideCalendar()" style="position:relative; top:0; right:0;">Close</button>
@@ -1017,6 +1018,7 @@ NEWP, GUY → 35" style="width:100%; background:#16213e; color:#fff; border:1px 
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <!-- Firebase Configuration -->
 <script>
