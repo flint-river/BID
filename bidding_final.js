@@ -2903,9 +2903,252 @@ function isLineConfirmed(lineNbr) {
 
         XLSX.utils.book_append_sheet(wb, ws2, 'Summary');
 
+        // Sheet 3: Year Overview (compact printable format matching user's Excel template)
+        const yearOverviewRows = [];
+        const dayAbbrevs = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+        // Row 1: Empty
+        yearOverviewRows.push([]);
+
+        // Row 2: Title centered
+        const titleRow = new Array(34).fill(null);
+        titleRow[15] = bidYear + '/' + (bidYear + 1) + ' LINE NUMBER ' + displayNum;
+        yearOverviewRows.push(titleRow);
+
+        // Row 3: Empty
+        yearOverviewRows.push([]);
+
+        // Build month rows (Apr through Mar) - exactly matching the format
+        const monthOrder = [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2]; // Apr=3 through Mar=2
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        monthOrder.forEach(monthIdx => {
+            const year = monthIdx >= 3 ? bidYear : bidYear + 1;
+            const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+            const monthAbbrev = monthNames[monthIdx];
+
+            // Row A: Day numbers header (1-31)
+            const dayNumRow = [null]; // Column A empty
+            for (let d = 1; d <= 31; d++) {
+                dayNumRow.push(d <= daysInMonth ? d : null);
+            }
+            yearOverviewRows.push(dayNumRow);
+
+            // Row B: Day of week abbreviations
+            const dowRow = [null]; // Column A empty
+            for (let d = 1; d <= 31; d++) {
+                if (d <= daysInMonth) {
+                    const date = new Date(year, monthIdx, d);
+                    dowRow.push(dayAbbrevs[date.getDay()]);
+                } else {
+                    dowRow.push(null);
+                }
+            }
+            yearOverviewRows.push(dowRow);
+
+            // Row C: Month label + Shift codes + Month label
+            const shiftRow = [monthAbbrev]; // Month on left
+            for (let d = 1; d <= 31; d++) {
+                if (d <= daysInMonth) {
+                    const dateStr = year + '-' + (monthIdx + 1) + '-' + d;
+                    const dayData = calData.days[dateStr];
+                    shiftRow.push(dayData ? dayData.s : '--');
+                } else {
+                    shiftRow.push(null);
+                }
+            }
+            shiftRow.push(monthAbbrev); // Month on right
+            yearOverviewRows.push(shiftRow);
+
+            // Row D: Empty row between months
+            yearOverviewRows.push([]);
+        });
+
+        // Footer: Day numbers (1-31)
+        const footerRow = [null];
+        for (let d = 1; d <= 31; d++) {
+            footerRow.push(d);
+        }
+        yearOverviewRows.push(footerRow);
+
+        const ws3 = XLSX.utils.aoa_to_sheet(yearOverviewRows);
+
+        // Set column widths - narrow to fit on one landscape page
+        const yearCols = [{ wch: 4 }]; // Column A: Month label
+        for (let i = 1; i <= 31; i++) {
+            yearCols.push({ wch: 5 }); // Columns B-AF: Day columns
+        }
+        yearCols.push({ wch: 4 }); // Column AG: Month label right
+        ws3['!cols'] = yearCols;
+
+        // Set row heights (compact)
+        ws3['!rows'] = [];
+        for (let i = 0; i < yearOverviewRows.length; i++) {
+            ws3['!rows'].push({ hpt: 15 }); // 15 points height
+        }
+
+        // Set print area and settings
+        const lastRow = yearOverviewRows.length;
+        ws3['!printArea'] = { s: { r: 0, c: 0 }, e: { r: lastRow - 1, c: 33 } };
+
+        // Page setup for landscape, fit to page, narrow margins
+        ws3['!pageSetup'] = {
+            orientation: 'landscape',
+            fitToPage: true,
+            fitToWidth: 1,
+            fitToHeight: 1,
+            paperSize: 1, // Letter
+            scale: 100
+        };
+
+        ws3['!margins'] = {
+            left: 0.25,
+            right: 0.25,
+            top: 0.5,
+            bottom: 0.5,
+            header: 0.3,
+            footer: 0.3
+        };
+
+        XLSX.utils.book_append_sheet(wb, ws3, 'Year Overview');
+
         // Download the file
         const fileName = 'Line_' + displayNum + '_' + bidYear + '-' + (bidYear + 1) + '.xlsx';
         XLSX.writeFile(wb, fileName);
+    }
+
+    // Export Year Overview as HTML with colors (opens in Excel with formatting)
+    function exportYearOverviewHTML(lineNbr) {
+        const calData = ALL_LINES_CALENDAR[lineNbr];
+        if (!calData) {
+            alert('Calendar data not found for line ' + lineNbr);
+            return;
+        }
+
+        const lineData = ANNUAL_BID.find(l => l.lineNbr === lineNbr || l.lineNbr === String(lineNbr));
+        if (!lineData) {
+            alert('Line data not found');
+            return;
+        }
+
+        const bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
+        const displayNum = lineData.lineNbr;
+        const dayAbbrevs = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const monthOrder = [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2];
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        // Build HTML with Excel-compatible styling
+        let html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+@page { size: landscape; margin: 0.25in; }
+@media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    table { page-break-inside: avoid; }
+}
+table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 9pt; }
+td, th { border: 1px solid #999; text-align: center; padding: 2px 4px; min-width: 28px; height: 16px; }
+.title { font-size: 14pt; font-weight: bold; border: none; }
+.month-label { font-weight: bold; background: #E0E0E0; }
+.day-num { background: #D0E8FF; font-weight: bold; }
+.dow { background: #F0F0F0; font-size: 8pt; }
+.work { background: #00FFFF; }
+.off { background: #00FF00; }
+.empty { background: #FFFFFF; border: none; }
+</style>
+</head>
+<body>
+<table>
+`;
+        // Empty row
+        html += '<tr><td class="empty" colspan="34"></td></tr>\n';
+
+        // Title row
+        html += '<tr>';
+        for (let i = 0; i < 14; i++) html += '<td class="empty"></td>';
+        html += '<td class="title" colspan="6">' + bidYear + '/' + (bidYear + 1) + ' LINE NUMBER ' + displayNum + '</td>';
+        for (let i = 0; i < 14; i++) html += '<td class="empty"></td>';
+        html += '</tr>\n';
+
+        // Empty row
+        html += '<tr><td class="empty" colspan="34"></td></tr>\n';
+
+        // Build each month
+        monthOrder.forEach(monthIdx => {
+            const year = monthIdx >= 3 ? bidYear : bidYear + 1;
+            const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+            const monthAbbrev = monthNames[monthIdx];
+
+            // Day numbers row
+            html += '<tr><td class="empty"></td>';
+            for (let d = 1; d <= 31; d++) {
+                if (d <= daysInMonth) {
+                    html += '<td class="day-num">' + d + '</td>';
+                } else {
+                    html += '<td class="empty"></td>';
+                }
+            }
+            html += '<td class="empty"></td></tr>\n';
+
+            // Day of week row
+            html += '<tr><td class="empty"></td>';
+            for (let d = 1; d <= 31; d++) {
+                if (d <= daysInMonth) {
+                    const date = new Date(year, monthIdx, d);
+                    html += '<td class="dow">' + dayAbbrevs[date.getDay()] + '</td>';
+                } else {
+                    html += '<td class="empty"></td>';
+                }
+            }
+            html += '<td class="empty"></td></tr>\n';
+
+            // Shift row with month labels
+            html += '<tr><td class="month-label">' + monthAbbrev + '</td>';
+            for (let d = 1; d <= 31; d++) {
+                if (d <= daysInMonth) {
+                    const dateStr = year + '-' + (monthIdx + 1) + '-' + d;
+                    const dayData = calData.days[dateStr];
+                    const shift = dayData ? dayData.s : '--';
+                    const cellClass = shift === '--' ? 'off' : 'work';
+                    html += '<td class="' + cellClass + '">' + shift + '</td>';
+                } else {
+                    html += '<td class="empty"></td>';
+                }
+            }
+            html += '<td class="month-label">' + monthAbbrev + '</td></tr>\n';
+
+            // Empty row between months
+            html += '<tr><td class="empty" colspan="34" style="height:8px;"></td></tr>\n';
+        });
+
+        // Footer day numbers
+        html += '<tr><td class="empty"></td>';
+        for (let d = 1; d <= 31; d++) {
+            html += '<td class="day-num">' + d + '</td>';
+        }
+        html += '<td class="empty"></td></tr>\n';
+
+        html += '</table>\n</body>\n</html>';
+
+        // Download as HTML file (Excel opens HTML with formatting)
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Line_' + displayNum + '_YearOverview_' + bidYear + '.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function exportCurrentYearOverviewHTML() {
+        if (currentCalendarLine) {
+            exportYearOverviewHTML(currentCalendarLine);
+        }
     }
 
     function printCurrentLineSummary() {
