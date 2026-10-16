@@ -3073,11 +3073,14 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 @media print {
     body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
     .no-print { display: none !important; }
-    .tab-content { display: block !important; page-break-after: always; }
-    .tab-content:last-child { page-break-after: auto; }
+    .tab-content { display: none !important; }
+    .tab-content.print-this { display: block !important; }
 }
 .toolbar { margin-bottom: 10px; text-align: center; }
 .toolbar button { padding: 8px 16px; margin: 0 5px; cursor: pointer; font-size: 12px; }
+.tab-header { text-align: right; margin-bottom: 5px; }
+.tab-header button { padding: 6px 14px; cursor: pointer; font-size: 12px; background: #0066cc; color: white; border: none; border-radius: 4px; }
+.tab-header button:hover { background: #0055aa; }
 .tabs { display: flex; gap: 5px; margin-bottom: 10px; border-bottom: 2px solid #0066cc; padding-bottom: 5px; }
 .tab-btn { padding: 10px 20px; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 5px 5px 0 0; font-size: 14px; font-weight: bold; }
 .tab-btn.active { background: #0066cc; color: white; border-color: #0066cc; }
@@ -3119,7 +3122,6 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 </head>
 <body>
 <div class="toolbar no-print">
-    <button onclick="window.print()">Print All</button>
     <button onclick="downloadAsHTML()">Download HTML</button>
     <span style="margin-left:20px; color:#666;">Click any shift cell to edit - colors update automatically</span>
 </div>
@@ -3132,6 +3134,7 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 
 <!-- SCHEDULE TAB -->
 <div id="schedule" class="tab-content active">
+    <div class="tab-header no-print"><button onclick="printTab('schedule')">Print Schedule</button></div>
     <div class="title">${bidYear}/${bidYear + 1} LINE ${displayNum}${lineType ? ' (' + lineType + ')' : ''} - Daily Schedule</div>
     <table class="schedule-table">
         <tr><th>Date</th><th>Day</th><th>Shift</th><th>Holiday</th></tr>
@@ -3161,6 +3164,7 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 
 <!-- SUMMARY TAB -->
 <div id="summary" class="tab-content">
+    <div class="tab-header no-print"><button onclick="printTab('summary')">Print Summary</button></div>
     <div class="title">${bidYear}/${bidYear + 1} LINE ${displayNum}${lineType ? ' (' + lineType + ')' : ''} - Summary</div>
     <div class="summary-section">
         <h3>Line Information</h3>
@@ -3210,6 +3214,7 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 
 <!-- YEAR OVERVIEW TAB -->
 <div id="yearview" class="tab-content">
+    <div class="tab-header no-print"><button onclick="printTab('yearview')">Print Year Overview</button></div>
     <div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
     <table class="year-table">
 `;
@@ -3270,6 +3275,17 @@ function showTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById(tabId).classList.add('active');
     event.target.classList.add('active');
+}
+
+function printTab(tabId) {
+    // Mark the tab to print
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('print-this'));
+    document.getElementById(tabId).classList.add('print-this');
+    window.print();
+    // Clean up after printing
+    setTimeout(() => {
+        document.getElementById(tabId).classList.remove('print-this');
+    }, 500);
 }
 
 function downloadAsHTML() {
