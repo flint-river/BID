@@ -15,7 +15,7 @@
         // SOM desks - Group 1
         'A06C': 2, 'A09D': 2, 'P12E': 2,
         // SOM desks - Group 2
-        'A06F': 3, 'P12H': 3, 'P12G': 3,
+        'A06F': 3, 'P12G': 3, 'A10H': 3,
         // SOM desks - Group 3
         'A06J': 4, 'P12K': 4,
         // SOM desks - Group 4
@@ -23,13 +23,13 @@
         'A06V': 5, 'A06W': 5, 'A06X': 5, 'A06Y': 5,
         // M18 desks
         'M18M': 6, 'M18N': 6, 'M18Q': 6, 'M18R': 6, 'M18S': 6,
-        'M18U': 6, 'M18V': 6, 'M18W': 6, 'M18X': 6, 'M18Y': 6,
+        'M18U': 6, 'M18V': 6, 'M18W': 6, 'M18X': 6, 'M18Y': 6, 'M18C': 6,
         // Relief
         'XX': 7, 'XXX': 7,
         // Off
         '--': 8,
-        // A10O
-        'A10O': 9
+        // A10O and other SOM desks
+        'A10O': 9, 'P12ATL': 9, 'P13DVT': 9
     };
 
     // Dynamic desk code map - starts with base, can be extended

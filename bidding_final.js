@@ -3043,6 +3043,117 @@ function isLineConfirmed(lineNbr) {
         const holidaysObj = window.HOLIDAYS || {};
         const patternMap = window.HOLIDAY_PATTERN_MAP || {};
 
+        // Dynamically collect all desks from pattern data
+        function collectAllDesks() {
+            const deskSets = {
+                ssom: new Set(),
+                som: new Set(),
+                m18: new Set(),
+                other: new Set()
+            };
+
+            // Try to get from PATTERN_METADATA.groups first (most authoritative)
+            if (window.PATTERN_METADATA && window.PATTERN_METADATA.groups) {
+                window.PATTERN_METADATA.groups.forEach(group => {
+                    const groupName = (group.name || '').toUpperCase();
+                    const desks = group.desks || [];
+                    const pairOnly = group.pairOnly || [];
+
+                    desks.concat(pairOnly).forEach(desk => {
+                        if (!desk || desk === '--') return;
+
+                        if (groupName.includes('SSOM')) {
+                            // SSOM group - but M18 desks stay in M18
+                            if (desk.startsWith('M18')) {
+                                deskSets.m18.add(desk);
+                            } else {
+                                deskSets.ssom.add(desk);
+                            }
+                        } else if (desk.startsWith('M18')) {
+                            deskSets.m18.add(desk);
+                        } else if (['XX', 'XXX'].includes(desk)) {
+                            deskSets.other.add(desk);
+                        } else {
+                            deskSets.som.add(desk);
+                        }
+                    });
+                });
+            }
+
+            // Also scan ANNUAL_BID for any additional desks
+            if (typeof ANNUAL_BID !== 'undefined') {
+                ANNUAL_BID.forEach(line => {
+                    (line.days || []).forEach(desk => {
+                        if (!desk || desk === '--') return;
+
+                        if (desk.startsWith('M18')) {
+                            deskSets.m18.add(desk);
+                        } else if (['XX', 'XXX'].includes(desk)) {
+                            deskSets.other.add(desk);
+                        } else if (desk.startsWith('E0') || desk === 'P12B' || desk === 'A06M' || desk === 'A09Z') {
+                            // Known SSOM desks
+                            deskSets.ssom.add(desk);
+                        } else {
+                            deskSets.som.add(desk);
+                        }
+                    });
+                });
+            }
+
+            // Always include these base desks as fallback
+            const baseSSOM = ['E05A', 'A06M', 'A09Z', 'P12B'];
+            baseSSOM.forEach(d => deskSets.ssom.add(d));
+
+            deskSets.other.add('XX');
+            deskSets.other.add('XXX');
+
+            return {
+                ssom: Array.from(deskSets.ssom).sort(),
+                som: Array.from(deskSets.som).sort(),
+                m18: Array.from(deskSets.m18).sort(),
+                other: Array.from(deskSets.other).sort()
+            };
+        }
+
+        const allDesks = collectAllDesks();
+
+        // Build shift palette HTML dynamically
+        function buildShiftPaletteHTML(desks) {
+            let html = '';
+
+            // Row 1: SSOM desks
+            html += '    <div class="drag-palette no-print" style="flex-wrap:wrap;">\n';
+            html += '        <span style="font-weight:bold; margin-right:5px;">SSOM:</span>\n';
+            desks.ssom.forEach(desk => {
+                html += '        <div class="drag-item shift" draggable="true" data-value="' + desk + '" data-type="shift">' + desk + '</div>\n';
+            });
+            html += '    </div>\n';
+
+            // Row 2: SOM desks
+            html += '    <div class="drag-palette no-print" style="flex-wrap:wrap;">\n';
+            html += '        <span style="font-weight:bold; margin-right:5px;">SOM:</span>\n';
+            desks.som.forEach(desk => {
+                html += '        <div class="drag-item shift" draggable="true" data-value="' + desk + '" data-type="shift">' + desk + '</div>\n';
+            });
+            html += '    </div>\n';
+
+            // Row 3: M18 desks + Other
+            html += '    <div class="drag-palette no-print" style="flex-wrap:wrap;">\n';
+            html += '        <span style="font-weight:bold; margin-right:5px;">M18:</span>\n';
+            desks.m18.forEach(desk => {
+                html += '        <div class="drag-item shift" draggable="true" data-value="' + desk + '" data-type="shift">' + desk + '</div>\n';
+            });
+            html += '        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">Other:</span>\n';
+            desks.other.forEach(desk => {
+                html += '        <div class="drag-item shift" draggable="true" data-value="' + desk + '" data-type="shift">' + desk + '</div>\n';
+            });
+            html += '    </div>\n';
+
+            return html;
+        }
+
+        const shiftPaletteHTML = buildShiftPaletteHTML(allDesks);
+
         // Sort dates
         const sortedDates = Object.keys(calData.days).sort((a, b) => {
             return new Date(a.replace(/-/g, '/')) - new Date(b.replace(/-/g, '/'));
@@ -3277,54 +3388,7 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
         <div class="drag-item special" draggable="true" data-value="SPEC" data-type="timeoff">SPECIAL</div>
         <div class="drag-item training" draggable="true" data-value="TRN" data-type="timeoff">TRAINING</div>
     </div>
-    <div class="drag-palette no-print" style="flex-wrap:wrap;">
-        <span style="font-weight:bold; margin-right:5px;">SSOM:</span>
-        <div class="drag-item shift" draggable="true" data-value="E05A" data-type="shift">E05A</div>
-        <div class="drag-item shift" draggable="true" data-value="A06M" data-type="shift">A06M</div>
-        <div class="drag-item shift" draggable="true" data-value="A09Z" data-type="shift">A09Z</div>
-        <div class="drag-item shift" draggable="true" data-value="P12B" data-type="shift">P12B</div>
-        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">SOM-1:</span>
-        <div class="drag-item shift" draggable="true" data-value="A06C" data-type="shift">A06C</div>
-        <div class="drag-item shift" draggable="true" data-value="A09D" data-type="shift">A09D</div>
-        <div class="drag-item shift" draggable="true" data-value="P12E" data-type="shift">P12E</div>
-        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">SOM-2:</span>
-        <div class="drag-item shift" draggable="true" data-value="A06F" data-type="shift">A06F</div>
-        <div class="drag-item shift" draggable="true" data-value="P12G" data-type="shift">P12G</div>
-        <div class="drag-item shift" draggable="true" data-value="P12H" data-type="shift">P12H</div>
-    </div>
-    <div class="drag-palette no-print" style="flex-wrap:wrap;">
-        <span style="font-weight:bold; margin-right:5px;">SOM-3:</span>
-        <div class="drag-item shift" draggable="true" data-value="A06J" data-type="shift">A06J</div>
-        <div class="drag-item shift" draggable="true" data-value="P12K" data-type="shift">P12K</div>
-        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">SOM-4:</span>
-        <div class="drag-item shift" draggable="true" data-value="A06N" data-type="shift">A06N</div>
-        <div class="drag-item shift" draggable="true" data-value="A06Q" data-type="shift">A06Q</div>
-        <div class="drag-item shift" draggable="true" data-value="A06R" data-type="shift">A06R</div>
-        <div class="drag-item shift" draggable="true" data-value="A06S" data-type="shift">A06S</div>
-        <div class="drag-item shift" draggable="true" data-value="A06U" data-type="shift">A06U</div>
-        <div class="drag-item shift" draggable="true" data-value="A06V" data-type="shift">A06V</div>
-        <div class="drag-item shift" draggable="true" data-value="A06W" data-type="shift">A06W</div>
-        <div class="drag-item shift" draggable="true" data-value="A06X" data-type="shift">A06X</div>
-        <div class="drag-item shift" draggable="true" data-value="A06Y" data-type="shift">A06Y</div>
-    </div>
-    <div class="drag-palette no-print" style="flex-wrap:wrap;">
-        <span style="font-weight:bold; margin-right:5px;">M18:</span>
-        <div class="drag-item shift" draggable="true" data-value="M18M" data-type="shift">M18M</div>
-        <div class="drag-item shift" draggable="true" data-value="M18N" data-type="shift">M18N</div>
-        <div class="drag-item shift" draggable="true" data-value="M18Q" data-type="shift">M18Q</div>
-        <div class="drag-item shift" draggable="true" data-value="M18R" data-type="shift">M18R</div>
-        <div class="drag-item shift" draggable="true" data-value="M18S" data-type="shift">M18S</div>
-        <div class="drag-item shift" draggable="true" data-value="M18U" data-type="shift">M18U</div>
-        <div class="drag-item shift" draggable="true" data-value="M18V" data-type="shift">M18V</div>
-        <div class="drag-item shift" draggable="true" data-value="M18W" data-type="shift">M18W</div>
-        <div class="drag-item shift" draggable="true" data-value="M18X" data-type="shift">M18X</div>
-        <div class="drag-item shift" draggable="true" data-value="M18Y" data-type="shift">M18Y</div>
-        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">Other:</span>
-        <div class="drag-item shift" draggable="true" data-value="A10O" data-type="shift">A10O</div>
-        <div class="drag-item shift" draggable="true" data-value="XX" data-type="shift">XX</div>
-        <div class="drag-item shift" draggable="true" data-value="XXX" data-type="shift">XXX</div>
-    </div>
-    <div class="drag-palette no-print" style="background:#e8e8e8;">
+${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e8e8;">
         <button onclick="undoChange()" class="edit-btn" title="Undo">↩ UNDO</button>
         <button onclick="redoChange()" class="edit-btn" title="Redo">↪ REDO</button>
         <button onclick="resetToOriginal()" class="edit-btn reset-btn" title="Reset to Original">🔄 RESET</button>
