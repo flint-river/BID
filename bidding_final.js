@@ -3444,7 +3444,8 @@ ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e
         <button onclick="undoChange()" class="edit-btn" title="Undo">↩ UNDO</button>
         <button onclick="redoChange()" class="edit-btn" title="Redo">↪ REDO</button>
         <button onclick="resetToOriginal()" class="edit-btn reset-btn" title="Reset to Original">🔄 RESET</button>
-        <button id="swapModeBtn" onclick="toggleSwapMode()" class="edit-btn" style="background:#3498db; margin-left:10px;" title="Toggle Swap Mode">📝 EDIT MODE</button>
+        <button id="swapModeBtn" onclick="toggleSwapMode()" class="edit-btn" style="background:#3498db; margin-left:10px;" title="Toggle between Edit and Swap modes">📝 EDIT MODE</button>
+        <span id="modeStatus" style="display:none; margin-left:10px; padding:5px 12px; border-radius:4px; color:#fff; font-weight:bold; font-size:11px;">EDIT MODE</span>
         <span style="margin-left:20px; border-left:2px solid #999; padding-left:15px;">
             <b>Compare with:</b>
             <select id="compareLineSelect" style="padding:4px; min-width:180px;" onchange="previewComparisonLine()">
@@ -3767,27 +3768,40 @@ var swapMode = false;  // false = Edit Mode, true = Swap Mode
 function toggleSwapMode() {
     swapMode = !swapMode;
     var btn = document.getElementById('swapModeBtn');
+    var status = document.getElementById('modeStatus');
     var cells = document.querySelectorAll('.shift-cell');
 
     if (swapMode) {
         btn.textContent = '🔄 SWAP MODE';
         btn.style.background = '#e74c3c';
+        status.textContent = 'SWAP MODE: Double-click your cell, then click comparison cell to give shift';
+        status.style.background = '#e74c3c';
+        status.style.display = 'block';
         // Disable editing in swap mode
         for (var i = 0; i < cells.length; i++) {
             cells[i].setAttribute('contenteditable', 'false');
+            cells[i].style.cursor = 'pointer';
         }
     } else {
         btn.textContent = '📝 EDIT MODE';
         btn.style.background = '#3498db';
+        status.textContent = 'EDIT MODE: Click cells to type, drag from palettes to add';
+        status.style.background = '#3498db';
+        status.style.display = 'block';
         // Enable editing in edit mode
         for (var i = 0; i < cells.length; i++) {
             cells[i].setAttribute('contenteditable', 'true');
+            cells[i].style.cursor = 'text';
         }
         // Deselect any selected cell
         if (selectedMainCell) {
             selectedMainCell.classList.remove('swap-selected');
             selectedMainCell = null;
         }
+        // Hide status after 3 seconds in edit mode
+        setTimeout(function() {
+            if (!swapMode) status.style.display = 'none';
+        }, 3000);
     }
 }
 
@@ -3851,18 +3865,12 @@ for (var sc = 0; sc < shiftCells.length; sc++) {
         selectMainCellForSwap(this);
     });
 
-    // Mousedown - temporarily disable contenteditable to allow drag
+    // Mousedown - only interfere with contenteditable in swap mode
     shiftCells[sc].addEventListener('mousedown', function(e) {
-        var cell = this;
-        var cellText = cell.textContent.trim();
-        // Only enable drag if cell has a shift (not empty or off)
-        if (cellText && cellText !== '--') {
-            cell.setAttribute('contenteditable', 'false');
-            // Re-enable contenteditable after a short delay (allows drag to start)
-            setTimeout(function() {
-                cell.setAttribute('contenteditable', 'true');
-            }, 200);
-        }
+        // In edit mode, let contenteditable work normally
+        if (!swapMode) return;
+
+        // In swap mode, cells are already not editable, nothing to do
     });
 
     // Make main cells draggable for swap planning
@@ -3878,9 +3886,11 @@ for (var sc = 0; sc < shiftCells.length; sc++) {
         }
     });
 
-    // Re-enable contenteditable after drag ends
+    // Re-enable contenteditable after drag ends (only in edit mode)
     shiftCells[sc].addEventListener('dragend', function(e) {
-        this.setAttribute('contenteditable', 'true');
+        if (!swapMode) {
+            this.setAttribute('contenteditable', 'true');
+        }
     });
 
     shiftCells[sc].addEventListener('dragover', function(e) {
