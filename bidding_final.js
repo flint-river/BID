@@ -3136,10 +3136,23 @@ function downloadAsHTML() {
 </body>
 </html>`;
 
-        // Open in new browser tab
-        const newWindow = window.open('', '_blank');
-        newWindow.document.write(html);
-        newWindow.document.close();
+        // Create blob URL and open in new tab (more reliable than window.open with document.write)
+        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
+
+        // Try to open in new tab
+        const newWindow = window.open(blobUrl, '_blank');
+
+        // If popup was blocked, fall back to download
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+            alert('Popup blocked! The file will download instead. Open it in your browser to view and edit.');
+            const a = document.createElement('a');
+            a.href = blobUrl;
+            a.download = 'Line_' + displayNum + '_YearOverview_' + bidYear + '.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
     }
 
     function exportCurrentYearOverviewHTML() {
