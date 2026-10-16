@@ -3046,22 +3046,30 @@ function isLineConfirmed(lineNbr) {
 <title>Line ${displayNum} Year Overview</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: Arial, sans-serif; font-size: 11px; padding: 10px; background: #fff; }
-@page { size: landscape; margin: 0.25in; }
+html, body { height: 100%; }
+body { font-family: Arial, sans-serif; font-size: 11px; padding: 10px; background: #fff; display: flex; flex-direction: column; }
+@page { size: landscape; margin: 0.2in; }
 @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
+    html, body { height: auto; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; display: block; }
     .no-print { display: none !important; }
+    .title { font-size: 14px; margin-bottom: 4px; }
+    table { width: 100%; }
+    td { height: auto; padding: 2px 1px; font-size: 9px; }
+    td.shift-cell { height: 22px; }
+    .dow { font-size: 8px; }
 }
 .title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 8px; }
-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-td { border: 1px solid #888; text-align: center; padding: 1px 2px; height: 18px; font-size: 10px; }
+table { border-collapse: collapse; width: 100%; table-layout: fixed; flex: 1; }
+td { border: 1px solid #888; text-align: center; padding: 1px 2px; font-size: 10px; }
+td.shift-cell { height: 24px; }
 td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
 .month-label { font-weight: bold; background: #E0E0E0; width: 30px; min-width: 30px; }
 .day-num { background: #87CEEB; font-weight: bold; color: #000; }
 .dow { background: #F5F5F5; font-size: 9px; }
 .work { background: #00FFFF; }
 .off { background: #00FF00; }
-.toolbar { margin-bottom: 10px; text-align: center; }
+.toolbar { margin-bottom: 10px; text-align: center; flex-shrink: 0; }
 .toolbar button { padding: 8px 16px; margin: 0 5px; cursor: pointer; font-size: 12px; }
 </style>
 </head>
@@ -3069,7 +3077,7 @@ td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
 <div class="toolbar no-print">
     <button onclick="window.print()">Print</button>
     <button onclick="downloadAsHTML()">Download HTML</button>
-    <span style="margin-left:20px; color:#666;">Click any cell to edit</span>
+    <span style="margin-left:20px; color:#666;">Click any cell to edit - colors update automatically</span>
 </div>
 <div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
 <table>
@@ -3107,7 +3115,7 @@ td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
                     const dayData = calData.days[dateStr];
                     const shift = dayData ? dayData.s : '--';
                     const cellClass = shift === '--' ? 'off' : 'work';
-                    html += '<td class="' + cellClass + '" contenteditable="true">' + shift + '</td>';
+                    html += '<td class="shift-cell ' + cellClass + '" contenteditable="true">' + shift + '</td>';
                 } else {
                     html += '<td style="background:#ccc;"></td>';
                 }
@@ -3132,6 +3140,29 @@ function downloadAsHTML() {
     a.download = 'Line_${displayNum}_YearOverview.html';
     a.click();
 }
+
+// Dynamic coloring - update cell color based on content
+document.querySelectorAll('.shift-cell').forEach(cell => {
+    cell.addEventListener('input', function() {
+        const val = this.textContent.trim();
+        this.classList.remove('work', 'off');
+        if (val === '--' || val === '') {
+            this.classList.add('off');
+        } else {
+            this.classList.add('work');
+        }
+    });
+
+    // Also handle blur to clean up
+    cell.addEventListener('blur', function() {
+        const val = this.textContent.trim();
+        if (val === '') {
+            this.textContent = '--';
+            this.classList.remove('work');
+            this.classList.add('off');
+        }
+    });
+});
 </script>
 </body>
 </html>`;
