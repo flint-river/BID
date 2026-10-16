@@ -3156,6 +3156,7 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
 .shift-cell.ot { background: #FFA500 !important; }
 .shift-cell.dt { background: #FF6347 !important; }
 .shift-cell.drag-over { outline: 3px dashed #0066cc; }
+.shift-cell.holiday-cell { font-weight: bold !important; border: 3px solid #FF0000 !important; }
 .edit-btn { padding: 6px 12px; cursor: pointer; font-size: 11px; font-weight: bold; border: 1px solid #666; border-radius: 4px; background: #fff; margin-left: 5px; }
 .edit-btn:hover { background: #e0e0e0; }
 .reset-btn { background: #dc3545; color: white; border-color: #dc3545; }
@@ -3169,13 +3170,13 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
 </div>
 
 <div class="tabs no-print">
-    <button class="tab-btn active" onclick="showTab('schedule')">Schedule</button>
+    <button class="tab-btn active" onclick="showTab('yearview')">Year Overview</button>
     <button class="tab-btn" onclick="showTab('summary')">Summary</button>
-    <button class="tab-btn" onclick="showTab('yearview')">Year Overview</button>
+    <button class="tab-btn" onclick="showTab('schedule')">Schedule</button>
 </div>
 
 <!-- SCHEDULE TAB -->
-<div id="schedule" class="tab-content active">
+<div id="schedule" class="tab-content">
     <div class="tab-header no-print"><button onclick="printTab('schedule')">Print Schedule</button></div>
     <div class="title">${bidYear}/${bidYear + 1} LINE ${displayNum}${lineType ? ' (' + lineType + ')' : ''} - Daily Schedule</div>
     <table class="schedule-table">
@@ -3255,7 +3256,7 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
 </div>
 
 <!-- YEAR OVERVIEW TAB -->
-<div id="yearview" class="tab-content">
+<div id="yearview" class="tab-content active">
     <div class="tab-header no-print">
         <select id="paperSize" style="padding:5px; margin-right:10px; font-size:12px;">
             <option value="letter">8.5" x 11" (Letter)</option>
@@ -3276,9 +3277,52 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
         <div class="drag-item special" draggable="true" data-value="SPEC" data-type="timeoff">SPECIAL</div>
         <div class="drag-item training" draggable="true" data-value="TRN" data-type="timeoff">TRAINING</div>
     </div>
-    <div class="drag-palette no-print" id="shiftPalette">
-        <span style="font-weight:bold; margin-right:5px;">Shifts:</span>
-        <!-- Dynamic shifts will be added here by JavaScript -->
+    <div class="drag-palette no-print" style="flex-wrap:wrap;">
+        <span style="font-weight:bold; margin-right:5px;">SSOM:</span>
+        <div class="drag-item shift" draggable="true" data-value="E05A" data-type="shift">E05A</div>
+        <div class="drag-item shift" draggable="true" data-value="A06M" data-type="shift">A06M</div>
+        <div class="drag-item shift" draggable="true" data-value="A09Z" data-type="shift">A09Z</div>
+        <div class="drag-item shift" draggable="true" data-value="P12B" data-type="shift">P12B</div>
+        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">SOM-1:</span>
+        <div class="drag-item shift" draggable="true" data-value="A06C" data-type="shift">A06C</div>
+        <div class="drag-item shift" draggable="true" data-value="A09D" data-type="shift">A09D</div>
+        <div class="drag-item shift" draggable="true" data-value="P12E" data-type="shift">P12E</div>
+        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">SOM-2:</span>
+        <div class="drag-item shift" draggable="true" data-value="A06F" data-type="shift">A06F</div>
+        <div class="drag-item shift" draggable="true" data-value="P12G" data-type="shift">P12G</div>
+        <div class="drag-item shift" draggable="true" data-value="P12H" data-type="shift">P12H</div>
+    </div>
+    <div class="drag-palette no-print" style="flex-wrap:wrap;">
+        <span style="font-weight:bold; margin-right:5px;">SOM-3:</span>
+        <div class="drag-item shift" draggable="true" data-value="A06J" data-type="shift">A06J</div>
+        <div class="drag-item shift" draggable="true" data-value="P12K" data-type="shift">P12K</div>
+        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">SOM-4:</span>
+        <div class="drag-item shift" draggable="true" data-value="A06N" data-type="shift">A06N</div>
+        <div class="drag-item shift" draggable="true" data-value="A06Q" data-type="shift">A06Q</div>
+        <div class="drag-item shift" draggable="true" data-value="A06R" data-type="shift">A06R</div>
+        <div class="drag-item shift" draggable="true" data-value="A06S" data-type="shift">A06S</div>
+        <div class="drag-item shift" draggable="true" data-value="A06U" data-type="shift">A06U</div>
+        <div class="drag-item shift" draggable="true" data-value="A06V" data-type="shift">A06V</div>
+        <div class="drag-item shift" draggable="true" data-value="A06W" data-type="shift">A06W</div>
+        <div class="drag-item shift" draggable="true" data-value="A06X" data-type="shift">A06X</div>
+        <div class="drag-item shift" draggable="true" data-value="A06Y" data-type="shift">A06Y</div>
+    </div>
+    <div class="drag-palette no-print" style="flex-wrap:wrap;">
+        <span style="font-weight:bold; margin-right:5px;">M18:</span>
+        <div class="drag-item shift" draggable="true" data-value="M18M" data-type="shift">M18M</div>
+        <div class="drag-item shift" draggable="true" data-value="M18N" data-type="shift">M18N</div>
+        <div class="drag-item shift" draggable="true" data-value="M18Q" data-type="shift">M18Q</div>
+        <div class="drag-item shift" draggable="true" data-value="M18R" data-type="shift">M18R</div>
+        <div class="drag-item shift" draggable="true" data-value="M18S" data-type="shift">M18S</div>
+        <div class="drag-item shift" draggable="true" data-value="M18U" data-type="shift">M18U</div>
+        <div class="drag-item shift" draggable="true" data-value="M18V" data-type="shift">M18V</div>
+        <div class="drag-item shift" draggable="true" data-value="M18W" data-type="shift">M18W</div>
+        <div class="drag-item shift" draggable="true" data-value="M18X" data-type="shift">M18X</div>
+        <div class="drag-item shift" draggable="true" data-value="M18Y" data-type="shift">M18Y</div>
+        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">Other:</span>
+        <div class="drag-item shift" draggable="true" data-value="A10O" data-type="shift">A10O</div>
+        <div class="drag-item shift" draggable="true" data-value="XX" data-type="shift">XX</div>
+        <div class="drag-item shift" draggable="true" data-value="XXX" data-type="shift">XXX</div>
     </div>
     <div class="drag-palette no-print" style="background:#e8e8e8;">
         <button onclick="undoChange()" class="edit-btn" title="Undo">↩ UNDO</button>
@@ -3321,7 +3365,8 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
                     const dayData = calData.days[dateStr];
                     const shift = dayData ? dayData.s : '--';
                     const cellClass = shift === '--' ? 'off' : 'work';
-                    html += '<td class="shift-cell ' + cellClass + '" contenteditable="true">' + shift + '</td>';
+                    const isHoliday = holidaysObj[dateStr] ? ' holiday-cell' : '';
+                    html += '<td class="shift-cell ' + cellClass + isHoliday + '" contenteditable="true">' + shift + '</td>';
                 } else {
                     html += '<td style="background:#ccc;"></td>';
                 }
@@ -3345,50 +3390,10 @@ let undoStack = [];
 let redoStack = [];
 let originalState = null;
 
-// Save original state on page load and build dynamic shift palette
+// Save original state on page load
 window.addEventListener('DOMContentLoaded', function() {
     originalState = captureState();
-    buildShiftPalette();
 });
-
-// Build dynamic shift palette from existing shifts in schedule
-function buildShiftPalette() {
-    const palette = document.getElementById('shiftPalette');
-    if (!palette) return;
-
-    // Collect unique shifts from the schedule
-    const shifts = new Set();
-    document.querySelectorAll('.shift-cell').forEach(cell => {
-        const val = cell.textContent.trim().toUpperCase();
-        // Exclude time-off codes and empty values
-        if (val && val !== '--' && val !== 'VAC' && val !== 'HOL' && val !== 'PPT' &&
-            val !== 'SPEC' && val !== 'TRN' && !val.startsWith('SW-') &&
-            !val.startsWith('OT-') && !val.startsWith('DT-')) {
-            shifts.add(val);
-        }
-    });
-
-    // Sort shifts alphabetically
-    const sortedShifts = Array.from(shifts).sort();
-
-    // Add drag items for each shift
-    sortedShifts.forEach(shift => {
-        const item = document.createElement('div');
-        item.className = 'drag-item shift';
-        item.draggable = true;
-        item.dataset.value = shift;
-        item.dataset.type = 'shift';
-        item.textContent = shift;
-
-        item.addEventListener('dragstart', function(e) {
-            draggedValue = this.dataset.value;
-            draggedType = this.dataset.type;
-            e.dataTransfer.effectAllowed = 'copy';
-        });
-
-        palette.appendChild(item);
-    });
-}
 
 function captureState() {
     const cells = document.querySelectorAll('.shift-cell');
