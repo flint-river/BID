@@ -3420,7 +3420,7 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
     <div class="instructions no-print">
         <b>How to Edit:</b> Click any cell to type directly, or <b>drag & drop</b> items from the palettes below.
         <b>Shifts:</b> Prompts for Regular/SWAP/OT/DT. <b>COMP WK:</b> Select a desk. <b>SPEC/TRN:</b> Choose COMP or OT.
-        <b>Compare Lines:</b> Enter a coworker's line # and click Load. Their shifts appear in orange below each month - drag to swap!
+        <b>Compare:</b> Select a coworker's line from dropdown → see preview → Load. Drag their shifts (orange row) to auto-swap!
         Use <b>UNDO/REDO</b> to navigate changes. <b>RESET</b> restores original. <b>Save:</b> Ctrl+S to download.
     </div>
     <div class="drag-palette no-print">
@@ -3441,11 +3441,16 @@ ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e
         <button onclick="redoChange()" class="edit-btn" title="Redo">↪ REDO</button>
         <button onclick="resetToOriginal()" class="edit-btn reset-btn" title="Reset to Original">🔄 RESET</button>
         <span style="margin-left:20px; border-left:2px solid #999; padding-left:15px;">
-            <b>Compare:</b> Line # <input type="text" id="compareLineInput" style="width:50px; padding:3px; text-align:center;" placeholder="##">
+            <b>Compare with:</b>
+            <select id="compareLineSelect" style="padding:4px; min-width:180px;" onchange="previewComparisonLine()">
+                <option value="">-- Select a line --</option>
+            </select>
             <button onclick="loadComparisonLine()" class="edit-btn" style="background:#9b59b6;">Load</button>
             <button onclick="clearComparisonLine()" class="edit-btn" style="background:#e74c3c;">Clear</button>
-            <span id="compareStatus" style="margin-left:10px; font-size:11px;"></span>
         </span>
+    </div>
+    <div id="comparePreview" class="no-print" style="display:none; background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px 12px; margin:5px 0; font-size:11px;">
+        <span id="comparePreviewText"></span>
     </div>
     <div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
     <table class="year-table">
@@ -3818,17 +3823,76 @@ for (var sc = 0; sc < shiftCells.length; sc++) {
 // Comparison line functionality
 var FIREBASE_URL = '${typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getFirebaseUrl() : 'https://bid2026-58308-default-rtdb.firebaseio.com'}';
 var CURRENT_BID_YEAR = ${bidYear};
+var CURRENT_LINE = '${displayNum}';
 var comparisonLineData = null;
+var allLinesData = {};
 
-function loadComparisonLine() {
-    var lineNum = document.getElementById('compareLineInput').value.trim();
+// Load all lines on page load for the dropdown
+function loadAllLinesForDropdown() {
+    fetch(FIREBASE_URL + '/bid' + CURRENT_BID_YEAR + '/lines.json')
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            if (!data) return;
+            allLinesData = data;
+            var select = document.getElementById('compareLineSelect');
+
+            // Sort line numbers
+            var lineNums = Object.keys(data).sort(function(a, b) {
+                return parseInt(a) - parseInt(b);
+            });
+
+            lineNums.forEach(function(lineNum) {
+                if (lineNum === CURRENT_LINE) return; // Skip current line
+                var line = data[lineNum];
+                var option = document.createElement('option');
+                option.value = lineNum;
+                var desc = line.lineDesc || '';
+                var pattern = line.offPattern || '';
+                option.textContent = 'Line ' + lineNum + (desc ? ' - ' + desc : '') + (pattern ? ' (' + pattern + ')' : '');
+                select.appendChild(option);
+            });
+        })
+        .catch(function(err) {
+            console.log('Could not load lines list:', err);
+        });
+}
+
+// Show preview when line is selected
+function previewComparisonLine() {
+    var select = document.getElementById('compareLineSelect');
+    var lineNum = select.value;
+    var preview = document.getElementById('comparePreview');
+    var previewText = document.getElementById('comparePreviewText');
+
     if (!lineNum) {
-        alert('Please enter a line number');
+        preview.style.display = 'none';
         return;
     }
 
-    document.getElementById('compareStatus').textContent = 'Loading...';
-    document.getElementById('compareStatus').style.color = '#666';
+    var line = allLinesData[lineNum];
+    if (line) {
+        var info = '<b>Line ' + lineNum + '</b>';
+        if (line.lineDesc) info += ' | Type: ' + line.lineDesc;
+        if (line.offPattern) info += ' | Off Pattern: ' + line.offPattern;
+        if (line.shifts && line.shifts.length > 0) {
+            var uniqueShifts = [];
+            line.shifts.forEach(function(s) { if (s !== '--' && uniqueShifts.indexOf(s) === -1) uniqueShifts.push(s); });
+            if (uniqueShifts.length > 0) info += ' | Shifts: ' + uniqueShifts.join(', ');
+        }
+        previewText.innerHTML = info;
+        preview.style.display = 'block';
+    } else {
+        preview.style.display = 'none';
+    }
+}
+
+function loadComparisonLine() {
+    var select = document.getElementById('compareLineSelect');
+    var lineNum = select.value;
+    if (!lineNum) {
+        alert('Please select a line from the dropdown');
+        return;
+    }
 
     // Fetch calendar data from Firebase
     var calendarPath = '/bid' + CURRENT_BID_YEAR + '/calendars/' + lineNum + '.json';
@@ -3843,14 +3907,17 @@ function loadComparisonLine() {
 
             comparisonLineData = data;
             displayComparisonLine(lineNum, data);
-            document.getElementById('compareStatus').textContent = 'Line ' + lineNum + ' loaded';
-            document.getElementById('compareStatus').style.color = '#27ae60';
+            document.getElementById('comparePreview').innerHTML = '<span style="color:#27ae60;"><b>✓ Line ' + lineNum + ' loaded</b> - Drag shifts from orange row to swap!</span>';
         })
         .catch(function(err) {
-            document.getElementById('compareStatus').textContent = 'Error: ' + err.message;
-            document.getElementById('compareStatus').style.color = '#e74c3c';
+            alert('Error loading line: ' + err.message);
         });
 }
+
+// Initialize on page load
+window.addEventListener('DOMContentLoaded', function() {
+    loadAllLinesForDropdown();
+});
 
 function displayComparisonLine(lineNum, data) {
     // Show all comparison rows
@@ -3906,8 +3973,8 @@ function setupComparisonDrag() {
 
 function clearComparisonLine() {
     comparisonLineData = null;
-    document.getElementById('compareLineInput').value = '';
-    document.getElementById('compareStatus').textContent = '';
+    document.getElementById('compareLineSelect').value = '';
+    document.getElementById('comparePreview').style.display = 'none';
 
     // Hide all comparison rows
     var compareRows = document.querySelectorAll('.compare-row');
