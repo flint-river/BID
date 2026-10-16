@@ -3421,11 +3421,11 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
         <button onclick="printYearOverview()">Print Year Overview</button>
     </div>
     <div class="instructions no-print">
-        <b>How to Edit:</b> Click any cell to type directly, or <b>drag & drop</b> items from the palettes below.
+        <b>EDIT MODE:</b> Click any cell to type directly, or drag & drop items from the palettes below.
         <b>Shifts:</b> Prompts for Regular/SWAP/OT/DT. <b>COMP WK:</b> Select a desk. <b>SPEC/TRN:</b> Choose COMP or OT.
-        <b>Compare:</b> Select a coworker's line → Load. Drag their shifts (orange) to your line = auto-swap.
-        <b>Give shift:</b> Double-click your cell (red border), then click comparison cell = you give them that shift.
-        Use <b>UNDO/REDO</b> to navigate changes. <b>RESET</b> restores original. <b>Save:</b> Ctrl+S to download.
+        <b>SWAP MODE:</b> Click button to toggle. Double-click your cell (red border), then click comparison cell = give them your shift.
+        <b>Compare:</b> Select coworker's line → Load. Drag their shifts (orange row) to your line = receive their shift.
+        <b>UNDO/REDO</b> navigate changes. <b>RESET</b> restores original. <b>Save:</b> Ctrl+S to download.
     </div>
     <div class="drag-palette no-print">
         <span style="font-weight:bold; margin-right:5px;">Time Off:</span>
@@ -3444,6 +3444,7 @@ ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e
         <button onclick="undoChange()" class="edit-btn" title="Undo">↩ UNDO</button>
         <button onclick="redoChange()" class="edit-btn" title="Redo">↪ REDO</button>
         <button onclick="resetToOriginal()" class="edit-btn reset-btn" title="Reset to Original">🔄 RESET</button>
+        <button id="swapModeBtn" onclick="toggleSwapMode()" class="edit-btn" style="background:#3498db; margin-left:10px;" title="Toggle Swap Mode">📝 EDIT MODE</button>
         <span style="margin-left:20px; border-left:2px solid #999; padding-left:15px;">
             <b>Compare with:</b>
             <select id="compareLineSelect" style="padding:4px; min-width:180px;" onchange="previewComparisonLine()">
@@ -3761,8 +3762,39 @@ var draggedSourceCell = null;  // Track source cell for swap-off marking
 
 // Click-to-swap functionality (alternative to drag for main-to-comparison swaps)
 var selectedMainCell = null;
+var swapMode = false;  // false = Edit Mode, true = Swap Mode
+
+function toggleSwapMode() {
+    swapMode = !swapMode;
+    var btn = document.getElementById('swapModeBtn');
+    var cells = document.querySelectorAll('.shift-cell');
+
+    if (swapMode) {
+        btn.textContent = '🔄 SWAP MODE';
+        btn.style.background = '#e74c3c';
+        // Disable editing in swap mode
+        for (var i = 0; i < cells.length; i++) {
+            cells[i].setAttribute('contenteditable', 'false');
+        }
+    } else {
+        btn.textContent = '📝 EDIT MODE';
+        btn.style.background = '#3498db';
+        // Enable editing in edit mode
+        for (var i = 0; i < cells.length; i++) {
+            cells[i].setAttribute('contenteditable', 'true');
+        }
+        // Deselect any selected cell
+        if (selectedMainCell) {
+            selectedMainCell.classList.remove('swap-selected');
+            selectedMainCell = null;
+        }
+    }
+}
 
 function selectMainCellForSwap(cell) {
+    // Only works in swap mode
+    if (!swapMode) return;
+
     // Deselect any previously selected cell
     if (selectedMainCell) {
         selectedMainCell.classList.remove('swap-selected');
