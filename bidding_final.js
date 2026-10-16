@@ -3302,6 +3302,13 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
 .shift-cell.ot { background: #FFA500 !important; }
 .shift-cell.dt { background: #FF6347 !important; }
 .shift-cell.drag-over { outline: 3px dashed #0066cc; }
+.compare-row { display: none; }
+.compare-row.visible { display: table-row; }
+.compare-row td { background: #ffe4b5 !important; font-size: 9px; height: 18px; }
+.compare-row .month-label { background: #ff8c00 !important; color: #fff; font-weight: bold; }
+.compare-row .compare-cell { cursor: grab; }
+.compare-row .compare-cell:hover { outline: 2px solid #9b59b6; }
+.compare-row .compare-cell.off-day { background: #ffd89b !important; color: #999; }
 .shift-cell.holiday-cell { font-weight: bold !important; border: 3px solid #FF0000 !important; }
 .edit-btn { padding: 6px 12px; cursor: pointer; font-size: 11px; font-weight: bold; border: 1px solid #666; border-radius: 4px; background: #fff; margin-left: 5px; }
 .edit-btn:hover { background: #e0e0e0; }
@@ -3413,8 +3420,8 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
     <div class="instructions no-print">
         <b>How to Edit:</b> Click any cell to type directly, or <b>drag & drop</b> items from the palettes below.
         <b>Shifts:</b> Prompts for Regular/SWAP/OT/DT. <b>COMP WK:</b> Select a desk. <b>SPEC/TRN:</b> Choose COMP or OT.
-        Use <b>UNDO/REDO</b> to navigate changes. <b>RESET</b> restores original (type "yes" to confirm).
-        <b>Save:</b> Ctrl+S to download. Select paper size before printing.
+        <b>Compare Lines:</b> Enter a coworker's line # and click Load. Their shifts appear in orange below each month - drag to swap!
+        Use <b>UNDO/REDO</b> to navigate changes. <b>RESET</b> restores original. <b>Save:</b> Ctrl+S to download.
     </div>
     <div class="drag-palette no-print">
         <span style="font-weight:bold; margin-right:5px;">Time Off:</span>
@@ -3433,6 +3440,12 @@ ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e
         <button onclick="undoChange()" class="edit-btn" title="Undo">↩ UNDO</button>
         <button onclick="redoChange()" class="edit-btn" title="Redo">↪ REDO</button>
         <button onclick="resetToOriginal()" class="edit-btn reset-btn" title="Reset to Original">🔄 RESET</button>
+        <span style="margin-left:20px; border-left:2px solid #999; padding-left:15px;">
+            <b>Compare:</b> Line # <input type="text" id="compareLineInput" style="width:50px; padding:3px; text-align:center;" placeholder="##">
+            <button onclick="loadComparisonLine()" class="edit-btn" style="background:#9b59b6;">Load</button>
+            <button onclick="clearComparisonLine()" class="edit-btn" style="background:#e74c3c;">Clear</button>
+            <span id="compareStatus" style="margin-left:10px; font-size:11px;"></span>
+        </span>
     </div>
     <div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
     <table class="year-table">
@@ -3477,6 +3490,18 @@ ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e
                 }
             }
             html += '<td class="month-label">' + monthAbbrev + '</td></tr>\n';
+
+            // Comparison row (hidden by default)
+            html += '<tr class="compare-row" data-month="' + monthIdx + '" data-year="' + year + '"><td class="month-label">CMP</td>';
+            for (let d = 1; d <= 31; d++) {
+                if (d <= daysInMonth) {
+                    const dateStr = year + '-' + (monthIdx + 1) + '-' + d;
+                    html += '<td class="compare-cell" data-date="' + dateStr + '">--</td>';
+                } else {
+                    html += '<td style="background:#ccc;"></td>';
+                }
+            }
+            html += '<td class="month-label">CMP</td></tr>\n';
         });
 
         // Footer row
@@ -3764,6 +3789,9 @@ for (var sc = 0; sc < shiftCells.length; sc++) {
                 } else {
                     targetCell.textContent = draggedValue;
                 }
+            } else if (draggedType === 'swap') {
+                // From comparison line - auto-apply as swap
+                targetCell.textContent = 'SW-' + draggedValue;
             } else if (draggedType === 'compwork') {
                 // COMP WORK - show desk selection popup
                 showDeskPopup(targetCell);
@@ -3785,6 +3813,114 @@ for (var sc = 0; sc < shiftCells.length; sc++) {
             updateCellColor(targetCell);
         }
     });
+}
+
+// Comparison line functionality
+var FIREBASE_URL = '${typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getFirebaseUrl() : 'https://bid2026-58308-default-rtdb.firebaseio.com'}';
+var CURRENT_BID_YEAR = ${bidYear};
+var comparisonLineData = null;
+
+function loadComparisonLine() {
+    var lineNum = document.getElementById('compareLineInput').value.trim();
+    if (!lineNum) {
+        alert('Please enter a line number');
+        return;
+    }
+
+    document.getElementById('compareStatus').textContent = 'Loading...';
+    document.getElementById('compareStatus').style.color = '#666';
+
+    // Fetch calendar data from Firebase
+    var calendarPath = '/bid' + CURRENT_BID_YEAR + '/calendars/' + lineNum + '.json';
+
+    fetch(FIREBASE_URL + calendarPath)
+        .then(function(response) {
+            if (!response.ok) throw new Error('Line not found');
+            return response.json();
+        })
+        .then(function(data) {
+            if (!data || !data.days) throw new Error('No data for this line');
+
+            comparisonLineData = data;
+            displayComparisonLine(lineNum, data);
+            document.getElementById('compareStatus').textContent = 'Line ' + lineNum + ' loaded';
+            document.getElementById('compareStatus').style.color = '#27ae60';
+        })
+        .catch(function(err) {
+            document.getElementById('compareStatus').textContent = 'Error: ' + err.message;
+            document.getElementById('compareStatus').style.color = '#e74c3c';
+        });
+}
+
+function displayComparisonLine(lineNum, data) {
+    // Show all comparison rows
+    var compareRows = document.querySelectorAll('.compare-row');
+    for (var i = 0; i < compareRows.length; i++) {
+        compareRows[i].classList.add('visible');
+
+        // Update the label
+        var labels = compareRows[i].querySelectorAll('.month-label');
+        for (var j = 0; j < labels.length; j++) {
+            labels[j].textContent = 'L' + lineNum;
+        }
+    }
+
+    // Fill in the shift data
+    var compareCells = document.querySelectorAll('.compare-cell');
+    for (var c = 0; c < compareCells.length; c++) {
+        var cell = compareCells[c];
+        var dateStr = cell.getAttribute('data-date');
+        var dayData = data.days[dateStr];
+        var shift = dayData ? dayData.s : '--';
+
+        cell.textContent = shift;
+        cell.setAttribute('data-value', shift);
+        cell.setAttribute('draggable', 'true');
+
+        if (shift === '--') {
+            cell.classList.add('off-day');
+        } else {
+            cell.classList.remove('off-day');
+        }
+    }
+
+    // Make comparison cells draggable as swaps
+    setupComparisonDrag();
+}
+
+function setupComparisonDrag() {
+    var compareCells = document.querySelectorAll('.compare-cell');
+    for (var i = 0; i < compareCells.length; i++) {
+        compareCells[i].addEventListener('dragstart', function(e) {
+            var shift = this.getAttribute('data-value');
+            if (shift && shift !== '--') {
+                draggedValue = shift;
+                draggedType = 'swap';  // Auto-swap from comparison line
+                e.dataTransfer.effectAllowed = 'copy';
+            } else {
+                e.preventDefault();
+            }
+        });
+    }
+}
+
+function clearComparisonLine() {
+    comparisonLineData = null;
+    document.getElementById('compareLineInput').value = '';
+    document.getElementById('compareStatus').textContent = '';
+
+    // Hide all comparison rows
+    var compareRows = document.querySelectorAll('.compare-row');
+    for (var i = 0; i < compareRows.length; i++) {
+        compareRows[i].classList.remove('visible');
+    }
+
+    // Reset cells
+    var compareCells = document.querySelectorAll('.compare-cell');
+    for (var c = 0; c < compareCells.length; c++) {
+        compareCells[c].textContent = '--';
+        compareCells[c].removeAttribute('draggable');
+    }
 }
 </script>
 </body>
