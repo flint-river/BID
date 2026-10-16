@@ -3836,18 +3836,12 @@ var allLinesData = ${JSON.stringify(
         // Get 12-day pattern snippet
         const patternSnippet = days.slice(0, 12).map(d => d || '--').join(' ');
 
-        // Get unique shifts for preview
-        const uniqueShifts = [];
-        days.slice(0, 12).forEach(s => {
-            if (s && s !== '--' && !uniqueShifts.includes(s)) uniqueShifts.push(s);
-        });
-
         acc[lineKey] = {
             lineNbr: lineKey,
             displayNum: parseInt(numPart),
             lineDesc: line.lineDesc || '',
             patternSnippet: patternSnippet,
-            shifts: uniqueShifts
+            days: days  // Full year's schedule for comparison
         };
         return acc;
     }, {})
@@ -3941,26 +3935,17 @@ function loadComparisonLine() {
     }
 
     var lineInfo = allLinesData[lineKey];
-    var displayLabel = lineInfo ? lineInfo.displayNum + (lineInfo.lineDesc ? '-' + lineInfo.lineDesc.charAt(0) : '') : lineKey;
+    if (!lineInfo || !lineInfo.days || lineInfo.days.length === 0) {
+        alert('Error loading line: No data for this line');
+        return;
+    }
 
-    // Fetch calendar data from Firebase
-    var calendarPath = '/bid' + CURRENT_BID_YEAR + '/calendars/' + lineKey + '.json';
+    var displayLabel = lineInfo.displayNum + '-' + lineInfo.lineDesc;
 
-    fetch(FIREBASE_URL + calendarPath)
-        .then(function(response) {
-            if (!response.ok) throw new Error('Line not found');
-            return response.json();
-        })
-        .then(function(data) {
-            if (!data || !data.days) throw new Error('No data for this line');
-
-            comparisonLineData = data;
-            displayComparisonLine(displayLabel, data);
-            document.getElementById('comparePreview').innerHTML = '<span style="color:#27ae60;"><b>✓ Line ' + displayLabel + ' loaded</b> - Drag shifts from orange row to swap!</span>';
-        })
-        .catch(function(err) {
-            alert('Error loading line: ' + err.message);
-        });
+    // Use embedded data directly - no Firebase fetch needed
+    comparisonLineData = { days: lineInfo.days };
+    displayComparisonLine(displayLabel, comparisonLineData);
+    document.getElementById('comparePreview').innerHTML = '<span style="color:#27ae60;"><b>Line ' + displayLabel + ' loaded</b> - Drag shifts from orange row to swap!</span>';
 }
 
 // Initialize on page load
