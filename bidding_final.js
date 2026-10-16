@@ -3825,36 +3825,38 @@ var FIREBASE_URL = '${typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getFirebase
 var CURRENT_BID_YEAR = ${bidYear};
 var CURRENT_LINE = '${displayNum}';
 var comparisonLineData = null;
-var allLinesData = {};
 
-// Load all lines on page load for the dropdown
+// All lines data embedded from ANNUAL_BID
+var allLinesData = ${JSON.stringify(
+    ANNUAL_BID.reduce((acc, line) => {
+        const num = line.lineNbr.toString().split('-')[0]; // Get just the number part
+        acc[num] = {
+            lineNbr: line.lineNbr,
+            lineDesc: line.lineDesc || '',
+            shifts: (line.days || []).filter(s => s !== '--').slice(0, 12) // First 12 unique shifts
+        };
+        return acc;
+    }, {})
+)};
+
+// Populate dropdown on page load
 function loadAllLinesForDropdown() {
-    fetch(FIREBASE_URL + '/bid' + CURRENT_BID_YEAR + '/lines.json')
-        .then(function(response) { return response.json(); })
-        .then(function(data) {
-            if (!data) return;
-            allLinesData = data;
-            var select = document.getElementById('compareLineSelect');
+    var select = document.getElementById('compareLineSelect');
 
-            // Sort line numbers
-            var lineNums = Object.keys(data).sort(function(a, b) {
-                return parseInt(a) - parseInt(b);
-            });
+    // Sort line numbers
+    var lineNums = Object.keys(allLinesData).sort(function(a, b) {
+        return parseInt(a) - parseInt(b);
+    });
 
-            lineNums.forEach(function(lineNum) {
-                if (lineNum === CURRENT_LINE) return; // Skip current line
-                var line = data[lineNum];
-                var option = document.createElement('option');
-                option.value = lineNum;
-                var desc = line.lineDesc || '';
-                var pattern = line.offPattern || '';
-                option.textContent = 'Line ' + lineNum + (desc ? ' - ' + desc : '') + (pattern ? ' (' + pattern + ')' : '');
-                select.appendChild(option);
-            });
-        })
-        .catch(function(err) {
-            console.log('Could not load lines list:', err);
-        });
+    lineNums.forEach(function(lineNum) {
+        if (lineNum === CURRENT_LINE) return; // Skip current line
+        var line = allLinesData[lineNum];
+        var option = document.createElement('option');
+        option.value = lineNum;
+        var desc = line.lineDesc || '';
+        option.textContent = 'Line ' + lineNum + (desc ? ' - ' + desc : '');
+        select.appendChild(option);
+    });
 }
 
 // Show preview when line is selected
@@ -3872,12 +3874,11 @@ function previewComparisonLine() {
     var line = allLinesData[lineNum];
     if (line) {
         var info = '<b>Line ' + lineNum + '</b>';
-        if (line.lineDesc) info += ' | Type: ' + line.lineDesc;
-        if (line.offPattern) info += ' | Off Pattern: ' + line.offPattern;
+        if (line.lineDesc) info += ' | <span style="color:#0066cc;">' + line.lineDesc + '</span>';
         if (line.shifts && line.shifts.length > 0) {
             var uniqueShifts = [];
-            line.shifts.forEach(function(s) { if (s !== '--' && uniqueShifts.indexOf(s) === -1) uniqueShifts.push(s); });
-            if (uniqueShifts.length > 0) info += ' | Shifts: ' + uniqueShifts.join(', ');
+            line.shifts.forEach(function(s) { if (s && s !== '--' && uniqueShifts.indexOf(s) === -1) uniqueShifts.push(s); });
+            if (uniqueShifts.length > 0) info += ' | Shifts: <b>' + uniqueShifts.join(', ') + '</b>';
         }
         previewText.innerHTML = info;
         preview.style.display = 'block';
