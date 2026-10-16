@@ -3833,14 +3833,10 @@ var allLinesData = ${JSON.stringify(
         const numPart = lineKey.split('-')[0];
         const days = line.days || [];
 
-        // Calculate off-day pattern from first 12 days (the rotation)
-        const offDays = [];
-        for (let i = 0; i < Math.min(12, days.length); i++) {
-            if (days[i] === '--') offDays.push(i + 1);
-        }
-        const offPattern = offDays.length > 0 ? offDays.join('-') + ' off' : '';
+        // Get 12-day pattern snippet
+        const patternSnippet = days.slice(0, 12).map(d => d || '--').join(' ');
 
-        // Get unique shifts
+        // Get unique shifts for preview
         const uniqueShifts = [];
         days.slice(0, 12).forEach(s => {
             if (s && s !== '--' && !uniqueShifts.includes(s)) uniqueShifts.push(s);
@@ -3848,9 +3844,9 @@ var allLinesData = ${JSON.stringify(
 
         acc[lineKey] = {
             lineNbr: lineKey,
-            displayNum: numPart,
+            displayNum: parseInt(numPart),
             lineDesc: line.lineDesc || '',
-            offPattern: offPattern,
+            patternSnippet: patternSnippet,
             shifts: uniqueShifts
         };
         return acc;
@@ -3861,23 +3857,54 @@ var allLinesData = ${JSON.stringify(
 function loadAllLinesForDropdown() {
     var select = document.getElementById('compareLineSelect');
 
-    // Sort by display number, then by type (SSOM before SOM)
-    var lineKeys = Object.keys(allLinesData).sort(function(a, b) {
-        var numA = parseInt(allLinesData[a].displayNum);
-        var numB = parseInt(allLinesData[b].displayNum);
-        if (numA !== numB) return numA - numB;
-        return a.localeCompare(b); // SSOM before SOM alphabetically
+    // Separate SSOM and SOM lines
+    var ssomLines = [];
+    var somLines = [];
+
+    Object.keys(allLinesData).forEach(function(lineKey) {
+        var line = allLinesData[lineKey];
+        if (line.lineDesc && line.lineDesc.toUpperCase().includes('SSOM')) {
+            ssomLines.push(lineKey);
+        } else {
+            somLines.push(lineKey);
+        }
     });
 
-    lineKeys.forEach(function(lineKey) {
+    // Sort each group by display number
+    ssomLines.sort(function(a, b) { return allLinesData[a].displayNum - allLinesData[b].displayNum; });
+    somLines.sort(function(a, b) { return allLinesData[a].displayNum - allLinesData[b].displayNum; });
+
+    // Add SSOM header
+    var ssomHeader = document.createElement('option');
+    ssomHeader.disabled = true;
+    ssomHeader.textContent = '── SSOM Lines ──';
+    ssomHeader.style.fontWeight = 'bold';
+    select.appendChild(ssomHeader);
+
+    // Add SSOM lines
+    ssomLines.forEach(function(lineKey) {
         var line = allLinesData[lineKey];
-        if (line.displayNum === CURRENT_LINE && line.lineDesc === '${lineType}') return; // Skip current line
+        if (line.displayNum == CURRENT_LINE && line.lineDesc === '${lineType}') return;
         var option = document.createElement('option');
         option.value = lineKey;
-        var text = 'Line ' + line.displayNum;
-        if (line.lineDesc) text += '-' + line.lineDesc;
-        if (line.offPattern) text += ' (' + line.offPattern + ')';
-        option.textContent = text;
+        option.textContent = 'Line ' + line.displayNum + ': ' + line.patternSnippet;
+        select.appendChild(option);
+    });
+
+    // Add SOM header
+    var somHeader = document.createElement('option');
+    somHeader.disabled = true;
+    somHeader.textContent = '── SOM Lines ──';
+    somHeader.style.fontWeight = 'bold';
+    select.appendChild(somHeader);
+
+    // Add SOM lines
+    somLines.forEach(function(lineKey) {
+        var line = allLinesData[lineKey];
+        if (line.displayNum == CURRENT_LINE && line.lineDesc === '${lineType}') return;
+        var option = document.createElement('option');
+        option.value = lineKey;
+        option.textContent = 'Line ' + line.displayNum + ': ' + line.patternSnippet;
         select.appendChild(option);
     });
 }
@@ -3896,12 +3923,8 @@ function previewComparisonLine() {
 
     var line = allLinesData[lineNum];
     if (line) {
-        var info = '<b>Line ' + line.displayNum + '</b>';
-        if (line.lineDesc) info += '-<span style="color:#0066cc; font-weight:bold;">' + line.lineDesc + '</span>';
-        if (line.offPattern) info += ' | <span style="color:#9b59b6;">' + line.offPattern + '</span>';
-        if (line.shifts && line.shifts.length > 0) {
-            info += ' | Shifts: <b>' + line.shifts.join(', ') + '</b>';
-        }
+        var info = '<b>Line ' + line.displayNum + '-' + line.lineDesc + '</b>';
+        info += '<br><span style="color:#9b59b6; font-family:monospace; font-size:10px;">' + line.patternSnippet + '</span>';
         previewText.innerHTML = info;
         preview.style.display = 'block';
     } else {
