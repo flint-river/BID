@@ -3017,7 +3017,7 @@ function isLineConfirmed(lineNbr) {
         XLSX.writeFile(wb, fileName);
     }
 
-    // Export Year Overview as HTML with colors (opens in Excel with formatting)
+    // Export Year Overview as HTML with colors (opens in browser tab with editable cells)
     function exportYearOverviewHTML(lineNbr) {
         const calData = ALL_LINES_CALENDAR[lineNbr];
         if (!calData) {
@@ -3033,79 +3033,73 @@ function isLineConfirmed(lineNbr) {
 
         const bidYear = typeof BID_CONFIG !== 'undefined' ? BID_CONFIG.getBidYear() : 2026;
         const displayNum = lineData.lineNbr;
+        const lineType = lineData.lineDesc || '';
         const dayAbbrevs = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const monthOrder = [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2];
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-        // Build HTML with Excel-compatible styling
-        let html = `
-<!DOCTYPE html>
+        // Build HTML matching user's exact format
+        let html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
+<title>Line ${displayNum} Year Overview</title>
 <style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Arial, sans-serif; font-size: 11px; padding: 10px; background: #fff; }
 @page { size: landscape; margin: 0.25in; }
 @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    table { page-break-inside: avoid; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
+    .no-print { display: none !important; }
 }
-table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 9pt; }
-td, th { border: 1px solid #999; text-align: center; padding: 2px 4px; min-width: 28px; height: 16px; }
-.title { font-size: 14pt; font-weight: bold; border: none; }
-.month-label { font-weight: bold; background: #E0E0E0; }
-.day-num { background: #D0E8FF; font-weight: bold; }
-.dow { background: #F0F0F0; font-size: 8pt; }
+.title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 8px; }
+table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+td { border: 1px solid #888; text-align: center; padding: 1px 2px; height: 18px; font-size: 10px; }
+td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
+.month-label { font-weight: bold; background: #E0E0E0; width: 30px; min-width: 30px; }
+.day-num { background: #87CEEB; font-weight: bold; color: #000; }
+.dow { background: #F5F5F5; font-size: 9px; }
 .work { background: #00FFFF; }
 .off { background: #00FF00; }
-.empty { background: #FFFFFF; border: none; }
+.toolbar { margin-bottom: 10px; text-align: center; }
+.toolbar button { padding: 8px 16px; margin: 0 5px; cursor: pointer; font-size: 12px; }
 </style>
 </head>
 <body>
+<div class="toolbar no-print">
+    <button onclick="window.print()">Print</button>
+    <button onclick="downloadAsHTML()">Download HTML</button>
+    <span style="margin-left:20px; color:#666;">Click any cell to edit</span>
+</div>
+<div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
 <table>
 `;
-        // Empty row
-        html += '<tr><td class="empty" colspan="34"></td></tr>\n';
+        // Header row with day numbers 1-31
+        html += '<tr><td class="month-label"></td>';
+        for (let d = 1; d <= 31; d++) {
+            html += '<td class="day-num">' + d + '</td>';
+        }
+        html += '<td class="month-label"></td></tr>\n';
 
-        // Title row
-        html += '<tr>';
-        for (let i = 0; i < 14; i++) html += '<td class="empty"></td>';
-        html += '<td class="title" colspan="6">' + bidYear + '/' + (bidYear + 1) + ' LINE NUMBER ' + displayNum + '</td>';
-        for (let i = 0; i < 14; i++) html += '<td class="empty"></td>';
-        html += '</tr>\n';
-
-        // Empty row
-        html += '<tr><td class="empty" colspan="34"></td></tr>\n';
-
-        // Build each month
+        // Build each month (3 rows per month: day nums, day of week, shifts)
         monthOrder.forEach(monthIdx => {
             const year = monthIdx >= 3 ? bidYear : bidYear + 1;
             const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
             const monthAbbrev = monthNames[monthIdx];
 
-            // Day numbers row
-            html += '<tr><td class="empty"></td>';
-            for (let d = 1; d <= 31; d++) {
-                if (d <= daysInMonth) {
-                    html += '<td class="day-num">' + d + '</td>';
-                } else {
-                    html += '<td class="empty"></td>';
-                }
-            }
-            html += '<td class="empty"></td></tr>\n';
-
-            // Day of week row
-            html += '<tr><td class="empty"></td>';
+            // Row 1: Day of week
+            html += '<tr><td class="month-label"></td>';
             for (let d = 1; d <= 31; d++) {
                 if (d <= daysInMonth) {
                     const date = new Date(year, monthIdx, d);
                     html += '<td class="dow">' + dayAbbrevs[date.getDay()] + '</td>';
                 } else {
-                    html += '<td class="empty"></td>';
+                    html += '<td style="background:#ccc;"></td>';
                 }
             }
-            html += '<td class="empty"></td></tr>\n';
+            html += '<td class="month-label"></td></tr>\n';
 
-            // Shift row with month labels
+            // Row 2: Shift codes with month labels
             html += '<tr><td class="month-label">' + monthAbbrev + '</td>';
             for (let d = 1; d <= 31; d++) {
                 if (d <= daysInMonth) {
@@ -3113,36 +3107,39 @@ td, th { border: 1px solid #999; text-align: center; padding: 2px 4px; min-width
                     const dayData = calData.days[dateStr];
                     const shift = dayData ? dayData.s : '--';
                     const cellClass = shift === '--' ? 'off' : 'work';
-                    html += '<td class="' + cellClass + '">' + shift + '</td>';
+                    html += '<td class="' + cellClass + '" contenteditable="true">' + shift + '</td>';
                 } else {
-                    html += '<td class="empty"></td>';
+                    html += '<td style="background:#ccc;"></td>';
                 }
             }
             html += '<td class="month-label">' + monthAbbrev + '</td></tr>\n';
-
-            // Empty row between months
-            html += '<tr><td class="empty" colspan="34" style="height:8px;"></td></tr>\n';
         });
 
-        // Footer day numbers
-        html += '<tr><td class="empty"></td>';
+        // Footer row with day numbers 1-31
+        html += '<tr><td class="month-label"></td>';
         for (let d = 1; d <= 31; d++) {
             html += '<td class="day-num">' + d + '</td>';
         }
-        html += '<td class="empty"></td></tr>\n';
+        html += '<td class="month-label"></td></tr>\n';
 
-        html += '</table>\n</body>\n</html>';
+        html += `</table>
+<script>
+function downloadAsHTML() {
+    const content = document.documentElement.outerHTML;
+    const blob = new Blob([content], {type: 'text/html'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Line_${displayNum}_YearOverview.html';
+    a.click();
+}
+</script>
+</body>
+</html>`;
 
-        // Download as HTML file (Excel opens HTML with formatting)
-        const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'Line_' + displayNum + '_YearOverview_' + bidYear + '.html';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+        // Open in new browser tab
+        const newWindow = window.open('', '_blank');
+        newWindow.document.write(html);
+        newWindow.document.close();
     }
 
     function exportCurrentYearOverviewHTML() {
