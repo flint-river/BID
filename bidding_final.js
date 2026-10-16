@@ -3043,14 +3043,27 @@ function isLineConfirmed(lineNbr) {
         const holidaysObj = window.HOLIDAYS || {};
         const patternMap = window.HOLIDAY_PATTERN_MAP || {};
 
-        // Dynamically collect all desks from pattern data
+        // Dynamically collect all desks from pattern data, organized by time groups
         function collectAllDesks() {
             const deskSets = {
                 ssom: new Set(),
-                som: new Set(),
+                som: {},  // Will be grouped by start hour
                 m18: new Set(),
                 other: new Set()
             };
+
+            // Helper to extract start hour from desk code (middle 2 digits)
+            function getStartHour(desk) {
+                const match = desk.match(/[A-Z](\d{2})/);
+                return match ? match[1] : '00';
+            }
+
+            // Helper to add SOM desk to correct time group
+            function addSomDesk(desk) {
+                const hour = getStartHour(desk);
+                if (!deskSets.som[hour]) deskSets.som[hour] = new Set();
+                deskSets.som[hour].add(desk);
+            }
 
             // Try to get from PATTERN_METADATA.groups first (most authoritative)
             if (window.PATTERN_METADATA && window.PATTERN_METADATA.groups) {
@@ -3074,7 +3087,7 @@ function isLineConfirmed(lineNbr) {
                         } else if (['XX', 'XXX'].includes(desk)) {
                             deskSets.other.add(desk);
                         } else {
-                            deskSets.som.add(desk);
+                            addSomDesk(desk);
                         }
                     });
                 });
@@ -3091,25 +3104,29 @@ function isLineConfirmed(lineNbr) {
                         } else if (['XX', 'XXX'].includes(desk)) {
                             deskSets.other.add(desk);
                         } else if (desk.startsWith('E0') || desk === 'P12B' || desk === 'A06M' || desk === 'A09Z') {
-                            // Known SSOM desks
                             deskSets.ssom.add(desk);
                         } else {
-                            deskSets.som.add(desk);
+                            addSomDesk(desk);
                         }
                     });
                 });
             }
 
-            // Always include these base desks as fallback
+            // Always include base desks as fallback
             const baseSSOM = ['E05A', 'A06M', 'A09Z', 'P12B'];
             baseSSOM.forEach(d => deskSets.ssom.add(d));
-
             deskSets.other.add('XX');
             deskSets.other.add('XXX');
 
+            // Convert SOM time groups to sorted arrays
+            const somByTime = {};
+            Object.keys(deskSets.som).sort().forEach(hour => {
+                somByTime[hour] = Array.from(deskSets.som[hour]).sort();
+            });
+
             return {
                 ssom: Array.from(deskSets.ssom).sort(),
-                som: Array.from(deskSets.som).sort(),
+                somByTime: somByTime,
                 m18: Array.from(deskSets.m18).sort(),
                 other: Array.from(deskSets.other).sort()
             };
@@ -3117,7 +3134,15 @@ function isLineConfirmed(lineNbr) {
 
         const allDesks = collectAllDesks();
 
-        // Build shift palette HTML dynamically
+        // Build all desks array for COMP WORK popup
+        const allDesksList = [
+            ...allDesks.ssom,
+            ...Object.values(allDesks.somByTime).flat(),
+            ...allDesks.m18,
+            ...allDesks.other.filter(d => d !== 'XX' && d !== 'XXX')
+        ].sort();
+
+        // Build shift palette HTML dynamically with time-grouped SOM
         function buildShiftPaletteHTML(desks) {
             let html = '';
 
@@ -3129,11 +3154,19 @@ function isLineConfirmed(lineNbr) {
             });
             html += '    </div>\n';
 
-            // Row 2: SOM desks
+            // Row 2: SOM desks grouped by start time
             html += '    <div class="drag-palette no-print" style="flex-wrap:wrap;">\n';
             html += '        <span style="font-weight:bold; margin-right:5px;">SOM:</span>\n';
-            desks.som.forEach(desk => {
-                html += '        <div class="drag-item shift" draggable="true" data-value="' + desk + '" data-type="shift">' + desk + '</div>\n';
+            const timeGroups = Object.keys(desks.somByTime).sort();
+            timeGroups.forEach((hour, idx) => {
+                if (idx > 0) {
+                    html += '        <span style="margin-left:8px; border-left:2px solid #999; padding-left:8px; font-weight:bold; font-size:10px; color:#666;">' + hour + 'hr:</span>\n';
+                } else {
+                    html += '        <span style="font-weight:bold; font-size:10px; color:#666; margin-right:3px;">' + hour + 'hr:</span>\n';
+                }
+                desks.somByTime[hour].forEach(desk => {
+                    html += '        <div class="drag-item shift" draggable="true" data-value="' + desk + '" data-type="shift">' + desk + '</div>\n';
+                });
             });
             html += '    </div>\n';
 
