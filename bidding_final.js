@@ -3302,6 +3302,9 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
 .shift-cell.ot { background: #FFA500 !important; }
 .shift-cell.dt { background: #FF6347 !important; }
 .shift-cell.drag-over { outline: 3px dashed #0066cc; }
+.shift-cell.swap-selected { outline: 3px solid #e74c3c !important; background: #ffcccc !important; }
+.compare-cell.swap-target { cursor: pointer; }
+.compare-cell.swap-target:hover { outline: 3px dashed #27ae60; }
 .compare-row { display: none; }
 .compare-row.visible { display: table-row; }
 .compare-row td { background: #ffe4b5 !important; font-size: 9px; height: 18px; }
@@ -3420,7 +3423,8 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
     <div class="instructions no-print">
         <b>How to Edit:</b> Click any cell to type directly, or <b>drag & drop</b> items from the palettes below.
         <b>Shifts:</b> Prompts for Regular/SWAP/OT/DT. <b>COMP WK:</b> Select a desk. <b>SPEC/TRN:</b> Choose COMP or OT.
-        <b>Compare:</b> Select a coworker's line from dropdown → see preview → Load. Drag their shifts (orange row) to auto-swap!
+        <b>Compare:</b> Select a coworker's line → Load. Drag their shifts (orange) to your line = auto-swap.
+        <b>Give shift:</b> Double-click your cell (red border), then click comparison cell = you give them that shift.
         Use <b>UNDO/REDO</b> to navigate changes. <b>RESET</b> restores original. <b>Save:</b> Ctrl+S to download.
     </div>
     <div class="drag-palette no-print">
@@ -3755,6 +3759,49 @@ var draggedValue = null;
 var draggedType = null;
 var draggedSourceCell = null;  // Track source cell for swap-off marking
 
+// Click-to-swap functionality (alternative to drag for main-to-comparison swaps)
+var selectedMainCell = null;
+
+function selectMainCellForSwap(cell) {
+    // Deselect any previously selected cell
+    if (selectedMainCell) {
+        selectedMainCell.classList.remove('swap-selected');
+    }
+
+    // If clicking same cell, just deselect
+    if (selectedMainCell === cell) {
+        selectedMainCell = null;
+        return;
+    }
+
+    // Select this cell
+    var cellText = cell.textContent.trim();
+    if (cellText && cellText !== '--' && cellText !== 'SW-OFF') {
+        selectedMainCell = cell;
+        cell.classList.add('swap-selected');
+    }
+}
+
+function swapToComparisonCell(compareCell) {
+    if (!selectedMainCell) return;
+
+    saveToUndo();
+
+    var mainShift = selectedMainCell.textContent.trim();
+
+    // Mark main cell as SWAP OFF (you're giving it up)
+    selectedMainCell.textContent = 'SW-OFF';
+    updateCellColor(selectedMainCell);
+    selectedMainCell.classList.remove('swap-selected');
+
+    // Show the swap on comparison cell (visual - they're receiving)
+    compareCell.textContent = 'SW-' + mainShift;
+    compareCell.style.background = '#27ae60';
+    compareCell.style.color = '#fff';
+
+    selectedMainCell = null;
+}
+
 var dragItems = document.querySelectorAll('.drag-item');
 for (var di = 0; di < dragItems.length; di++) {
     dragItems[di].addEventListener('dragstart', function(e) {
@@ -3766,6 +3813,12 @@ for (var di = 0; di < dragItems.length; di++) {
 
 var shiftCells = document.querySelectorAll('.shift-cell');
 for (var sc = 0; sc < shiftCells.length; sc++) {
+    // Double-click to select cell for swap (single-click stays for editing)
+    shiftCells[sc].addEventListener('dblclick', function(e) {
+        e.preventDefault();
+        selectMainCellForSwap(this);
+    });
+
     // Mousedown - temporarily disable contenteditable to allow drag
     shiftCells[sc].addEventListener('mousedown', function(e) {
         var cell = this;
@@ -4062,6 +4115,18 @@ function displayComparisonLine(lineNum, data) {
 function setupComparisonDrag() {
     var compareCells = document.querySelectorAll('.compare-cell');
     for (var i = 0; i < compareCells.length; i++) {
+        // Add swap-target class for visual feedback
+        compareCells[i].classList.add('swap-target');
+
+        // Click to receive swap from selected main cell
+        compareCells[i].addEventListener('click', function(e) {
+            if (selectedMainCell) {
+                e.preventDefault();
+                e.stopPropagation();
+                swapToComparisonCell(this);
+            }
+        });
+
         // Drag FROM comparison cell
         compareCells[i].addEventListener('dragstart', function(e) {
             var shift = this.getAttribute('data-value');
