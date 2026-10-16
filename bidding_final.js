@@ -4423,8 +4423,14 @@ function isLineConfirmed(lineNbr) {
         holidayList.forEach(function(h) {
             var dayData = calendar.days[h.date];
             var isOff = dayData && dayData.s === '--';
+
+            // Format date nicely (e.g., "Apr 20, 2027")
+            var dateObj = new Date(h.date.replace(/-/g, '/'));
+            var monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            var formattedDate = monthNames[dateObj.getMonth()] + ' ' + dateObj.getDate() + ', ' + dateObj.getFullYear();
+
             html += '<div class="holiday-row">' +
-                '<span>' + h.name + '</span>' +
+                '<span>' + h.name + ' <span style="color:#888; font-size:11px;">(' + formattedDate + ')</span></span>' +
                 '<span class="' + (isOff ? 'holiday-off' : 'holiday-work') + '">' + (isOff ? '✓ OFF' : (dayData ? dayData.s : 'WORK')) + '</span>' +
             '</div>';
         });
