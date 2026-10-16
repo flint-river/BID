@@ -3489,7 +3489,7 @@ ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e
                     const shift = dayData ? dayData.s : '--';
                     const cellClass = shift === '--' ? 'off' : 'work';
                     const isHoliday = holidaysObj[dateStr] ? ' holiday-cell' : '';
-                    html += '<td class="shift-cell ' + cellClass + isHoliday + '" contenteditable="true">' + shift + '</td>';
+                    html += '<td class="shift-cell ' + cellClass + isHoliday + '" contenteditable="true" draggable="true" data-date="' + dateStr + '">' + shift + '</td>';
                 } else {
                     html += '<td style="background:#ccc;"></td>';
                 }
@@ -3753,6 +3753,7 @@ function showDeskPopup(targetCell) {
 // Drag and drop functionality
 var draggedValue = null;
 var draggedType = null;
+var draggedSourceCell = null;  // Track source cell for swap-off marking
 
 var dragItems = document.querySelectorAll('.drag-item');
 for (var di = 0; di < dragItems.length; di++) {
@@ -3765,6 +3766,19 @@ for (var di = 0; di < dragItems.length; di++) {
 
 var shiftCells = document.querySelectorAll('.shift-cell');
 for (var sc = 0; sc < shiftCells.length; sc++) {
+    // Make main cells draggable for swap planning
+    shiftCells[sc].addEventListener('dragstart', function(e) {
+        var cellText = this.textContent.trim();
+        if (cellText && cellText !== '--') {
+            draggedValue = cellText;
+            draggedType = 'mainshift';  // From main line
+            draggedSourceCell = this;
+            e.dataTransfer.effectAllowed = 'copy';
+        } else {
+            e.preventDefault();
+        }
+    });
+
     shiftCells[sc].addEventListener('dragover', function(e) {
         e.preventDefault();
         this.classList.add('drag-over');
@@ -3797,6 +3811,12 @@ for (var sc = 0; sc < shiftCells.length; sc++) {
             } else if (draggedType === 'swap') {
                 // From comparison line - auto-apply as swap
                 targetCell.textContent = 'SW-' + draggedValue;
+                // Mark comparison source cell as SWAP OFF (they're giving it up)
+                if (draggedSourceCell) {
+                    draggedSourceCell.textContent = 'SW-OFF';
+                    draggedSourceCell.style.background = '#95a5a6';
+                    draggedSourceCell.style.color = '#fff';
+                }
             } else if (draggedType === 'compwork') {
                 // COMP WORK - show desk selection popup
                 showDeskPopup(targetCell);
@@ -4023,14 +4043,45 @@ function displayComparisonLine(lineNum, data) {
 function setupComparisonDrag() {
     var compareCells = document.querySelectorAll('.compare-cell');
     for (var i = 0; i < compareCells.length; i++) {
+        // Drag FROM comparison cell
         compareCells[i].addEventListener('dragstart', function(e) {
             var shift = this.getAttribute('data-value');
-            if (shift && shift !== '--') {
+            if (shift && shift !== '--' && shift !== 'SW-OFF') {
                 draggedValue = shift;
                 draggedType = 'swap';  // Auto-swap from comparison line
+                draggedSourceCell = this;  // Track source for SWAP OFF marking
                 e.dataTransfer.effectAllowed = 'copy';
             } else {
                 e.preventDefault();
+            }
+        });
+
+        // Allow dropping ON comparison cells (for bi-directional swap)
+        compareCells[i].addEventListener('dragover', function(e) {
+            if (draggedType === 'mainshift') {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            }
+        });
+
+        compareCells[i].addEventListener('dragleave', function(e) {
+            this.classList.remove('drag-over');
+        });
+
+        compareCells[i].addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('drag-over');
+
+            // Only accept drops from main line
+            if (draggedType === 'mainshift' && draggedSourceCell) {
+                // Mark main source cell as SWAP OFF (you're giving it up)
+                draggedSourceCell.textContent = 'SW-OFF';
+                updateCellColor(draggedSourceCell);
+
+                // Show the swap on comparison cell (visual only - they're receiving)
+                this.textContent = 'SW-' + draggedValue;
+                this.style.background = '#27ae60';
+                this.style.color = '#fff';
             }
         });
     }
