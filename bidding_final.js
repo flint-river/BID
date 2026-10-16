@@ -3829,11 +3829,29 @@ var comparisonLineData = null;
 // All lines data embedded from ANNUAL_BID
 var allLinesData = ${JSON.stringify(
     ANNUAL_BID.reduce((acc, line) => {
-        const num = line.lineNbr.toString().split('-')[0]; // Get just the number part
-        acc[num] = {
-            lineNbr: line.lineNbr,
+        const lineKey = line.lineNbr.toString();
+        const numPart = lineKey.split('-')[0];
+        const days = line.days || [];
+
+        // Calculate off-day pattern from first 12 days (the rotation)
+        const offDays = [];
+        for (let i = 0; i < Math.min(12, days.length); i++) {
+            if (days[i] === '--') offDays.push(i + 1);
+        }
+        const offPattern = offDays.length > 0 ? offDays.join('-') + ' off' : '';
+
+        // Get unique shifts
+        const uniqueShifts = [];
+        days.slice(0, 12).forEach(s => {
+            if (s && s !== '--' && !uniqueShifts.includes(s)) uniqueShifts.push(s);
+        });
+
+        acc[lineKey] = {
+            lineNbr: lineKey,
+            displayNum: numPart,
             lineDesc: line.lineDesc || '',
-            shifts: (line.days || []).filter(s => s !== '--').slice(0, 12) // First 12 unique shifts
+            offPattern: offPattern,
+            shifts: uniqueShifts
         };
         return acc;
     }, {})
@@ -3843,18 +3861,23 @@ var allLinesData = ${JSON.stringify(
 function loadAllLinesForDropdown() {
     var select = document.getElementById('compareLineSelect');
 
-    // Sort line numbers
-    var lineNums = Object.keys(allLinesData).sort(function(a, b) {
-        return parseInt(a) - parseInt(b);
+    // Sort by display number, then by type (SSOM before SOM)
+    var lineKeys = Object.keys(allLinesData).sort(function(a, b) {
+        var numA = parseInt(allLinesData[a].displayNum);
+        var numB = parseInt(allLinesData[b].displayNum);
+        if (numA !== numB) return numA - numB;
+        return a.localeCompare(b); // SSOM before SOM alphabetically
     });
 
-    lineNums.forEach(function(lineNum) {
-        if (lineNum === CURRENT_LINE) return; // Skip current line
-        var line = allLinesData[lineNum];
+    lineKeys.forEach(function(lineKey) {
+        var line = allLinesData[lineKey];
+        if (line.displayNum === CURRENT_LINE && line.lineDesc === '${lineType}') return; // Skip current line
         var option = document.createElement('option');
-        option.value = lineNum;
-        var desc = line.lineDesc || '';
-        option.textContent = 'Line ' + lineNum + (desc ? ' - ' + desc : '');
+        option.value = lineKey;
+        var text = 'Line ' + line.displayNum;
+        if (line.lineDesc) text += '-' + line.lineDesc;
+        if (line.offPattern) text += ' (' + line.offPattern + ')';
+        option.textContent = text;
         select.appendChild(option);
     });
 }
@@ -3873,12 +3896,11 @@ function previewComparisonLine() {
 
     var line = allLinesData[lineNum];
     if (line) {
-        var info = '<b>Line ' + lineNum + '</b>';
-        if (line.lineDesc) info += ' | <span style="color:#0066cc;">' + line.lineDesc + '</span>';
+        var info = '<b>Line ' + line.displayNum + '</b>';
+        if (line.lineDesc) info += '-<span style="color:#0066cc; font-weight:bold;">' + line.lineDesc + '</span>';
+        if (line.offPattern) info += ' | <span style="color:#9b59b6;">' + line.offPattern + '</span>';
         if (line.shifts && line.shifts.length > 0) {
-            var uniqueShifts = [];
-            line.shifts.forEach(function(s) { if (s && s !== '--' && uniqueShifts.indexOf(s) === -1) uniqueShifts.push(s); });
-            if (uniqueShifts.length > 0) info += ' | Shifts: <b>' + uniqueShifts.join(', ') + '</b>';
+            info += ' | Shifts: <b>' + line.shifts.join(', ') + '</b>';
         }
         previewText.innerHTML = info;
         preview.style.display = 'block';
@@ -3889,14 +3911,17 @@ function previewComparisonLine() {
 
 function loadComparisonLine() {
     var select = document.getElementById('compareLineSelect');
-    var lineNum = select.value;
-    if (!lineNum) {
+    var lineKey = select.value;
+    if (!lineKey) {
         alert('Please select a line from the dropdown');
         return;
     }
 
+    var lineInfo = allLinesData[lineKey];
+    var displayLabel = lineInfo ? lineInfo.displayNum + (lineInfo.lineDesc ? '-' + lineInfo.lineDesc.charAt(0) : '') : lineKey;
+
     // Fetch calendar data from Firebase
-    var calendarPath = '/bid' + CURRENT_BID_YEAR + '/calendars/' + lineNum + '.json';
+    var calendarPath = '/bid' + CURRENT_BID_YEAR + '/calendars/' + lineKey + '.json';
 
     fetch(FIREBASE_URL + calendarPath)
         .then(function(response) {
@@ -3907,8 +3932,8 @@ function loadComparisonLine() {
             if (!data || !data.days) throw new Error('No data for this line');
 
             comparisonLineData = data;
-            displayComparisonLine(lineNum, data);
-            document.getElementById('comparePreview').innerHTML = '<span style="color:#27ae60;"><b>✓ Line ' + lineNum + ' loaded</b> - Drag shifts from orange row to swap!</span>';
+            displayComparisonLine(displayLabel, data);
+            document.getElementById('comparePreview').innerHTML = '<span style="color:#27ae60;"><b>✓ Line ' + displayLabel + ' loaded</b> - Drag shifts from orange row to swap!</span>';
         })
         .catch(function(err) {
             alert('Error loading line: ' + err.message);
