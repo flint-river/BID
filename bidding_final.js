@@ -3416,10 +3416,10 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
         <div class="drag-item off" draggable="true" data-value="--" data-type="timeoff">OFF</div>
         <div class="drag-item swapoff" draggable="true" data-value="SW-OFF" data-type="timeoff">SWAP OFF</div>
         <div class="drag-item compoff" draggable="true" data-value="COMP-OFF" data-type="timeoff">COMP OFF</div>
-        <div class="drag-item compwork" draggable="true" data-value="COMP-WK" data-type="timeoff">COMP WORK</div>
+        <div class="drag-item compwork" draggable="true" data-value="COMP-WK" data-type="compwork">COMP WK</div>
         <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">Special:</span>
-        <div class="drag-item special" draggable="true" data-value="SPEC" data-type="timeoff">SPECIAL</div>
-        <div class="drag-item training" draggable="true" data-value="TRN" data-type="timeoff">TRAINING</div>
+        <div class="drag-item special" draggable="true" data-value="SPEC" data-type="special">SPEC</div>
+        <div class="drag-item training" draggable="true" data-value="TRN" data-type="special">TRN</div>
     </div>
 ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e8e8;">
         <button onclick="undoChange()" class="edit-btn" title="Undo">↩ UNDO</button>
@@ -3612,15 +3612,17 @@ function updateCellColor(cell) {
         cell.classList.add('hol');
     } else if (val === 'PPT') {
         cell.classList.add('ppt');
-    } else if (val === 'SPEC' || val === 'SPECIAL') {
+    } else if (val === 'SPEC' || val === 'SPECIAL' || val === 'C-SPEC') {
         cell.classList.add('special');
-    } else if (val === 'TRN' || val === 'TRAINING') {
+    } else if (val === 'TRN' || val === 'TRAINING' || val === 'C-TRN') {
         cell.classList.add('training');
+    } else if (val === 'OT-SPEC' || val === 'OT-TRN') {
+        cell.classList.add('ot');
     } else if (val === 'SW-OFF' || val === 'SWAP-OFF') {
         cell.classList.add('swapoff');
     } else if (val === 'COMP-OFF') {
         cell.classList.add('compoff');
-    } else if (val === 'COMP-WK' || val === 'COMP-WORK') {
+    } else if (val === 'COMP-WK' || val === 'COMP-WORK' || val.startsWith('CW-')) {
         cell.classList.add('compwork');
     } else if (val.startsWith('SW-')) {
         cell.classList.add('swap');
@@ -3662,54 +3664,120 @@ document.querySelectorAll('[contenteditable="true"]').forEach(cell => {
     }
 });
 
-// Drag and drop functionality
-let draggedValue = null;
-let draggedType = null;
+// Desk list for COMP WORK popup
+var ALL_DESKS = ${JSON.stringify(allDesksList)};
 
-document.querySelectorAll('.drag-item').forEach(item => {
-    item.addEventListener('dragstart', function(e) {
-        draggedValue = this.dataset.value;
-        draggedType = this.dataset.type || 'timeoff';
+// Show desk selection popup for COMP WORK
+function showDeskPopup(targetCell) {
+    // Create popup overlay
+    var overlay = document.createElement('div');
+    overlay.id = 'deskPopupOverlay';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;';
+
+    var deskButtons = '';
+    for (var i = 0; i < ALL_DESKS.length; i++) {
+        var desk = ALL_DESKS[i];
+        deskButtons += '<button class="desk-btn" data-desk="' + desk + '" style="margin:3px;padding:8px 12px;font-weight:bold;cursor:pointer;background:#4ecca3;border:none;border-radius:4px;">' + desk + '</button>';
+    }
+
+    overlay.innerHTML = '<div style="background:#1a1a2e;padding:20px;border-radius:10px;max-width:600px;max-height:80vh;overflow:auto;border:2px solid #4ecca3;">' +
+        '<h3 style="color:#4ecca3;margin:0 0 15px 0;text-align:center;">Select Desk for COMP WORK</h3>' +
+        '<div style="display:flex;flex-wrap:wrap;justify-content:center;">' + deskButtons + '</div>' +
+        '<div style="text-align:center;margin-top:15px;"><button id="cancelDeskPopup" style="padding:8px 20px;background:#e94560;color:white;border:none;border-radius:4px;cursor:pointer;">Cancel</button></div>' +
+        '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Handle desk selection
+    var deskBtns = overlay.querySelectorAll('.desk-btn');
+    for (var j = 0; j < deskBtns.length; j++) {
+        deskBtns[j].addEventListener('click', function() {
+            var desk = this.getAttribute('data-desk');
+            document.body.removeChild(overlay);
+            targetCell.textContent = 'CW-' + desk;
+            updateCellColor(targetCell);
+        });
+    }
+
+    // Handle cancel
+    document.getElementById('cancelDeskPopup').addEventListener('click', function() {
+        document.body.removeChild(overlay);
+    });
+
+    // Close on overlay click
+    overlay.addEventListener('click', function(e) {
+        if (e.target === overlay) {
+            document.body.removeChild(overlay);
+        }
+    });
+}
+
+// Drag and drop functionality
+var draggedValue = null;
+var draggedType = null;
+
+var dragItems = document.querySelectorAll('.drag-item');
+for (var di = 0; di < dragItems.length; di++) {
+    dragItems[di].addEventListener('dragstart', function(e) {
+        draggedValue = this.getAttribute('data-value');
+        draggedType = this.getAttribute('data-type') || 'timeoff';
         e.dataTransfer.effectAllowed = 'copy';
     });
-});
+}
 
-document.querySelectorAll('.shift-cell').forEach(cell => {
-    cell.addEventListener('dragover', function(e) {
+var shiftCells = document.querySelectorAll('.shift-cell');
+for (var sc = 0; sc < shiftCells.length; sc++) {
+    shiftCells[sc].addEventListener('dragover', function(e) {
         e.preventDefault();
         this.classList.add('drag-over');
     });
 
-    cell.addEventListener('dragleave', function(e) {
+    shiftCells[sc].addEventListener('dragleave', function(e) {
         this.classList.remove('drag-over');
     });
 
-    cell.addEventListener('drop', function(e) {
+    shiftCells[sc].addEventListener('drop', function(e) {
         e.preventDefault();
         this.classList.remove('drag-over');
+        var targetCell = this;
         if (draggedValue) {
             saveToUndo();
 
             // If it's a shift (not time-off), ask about swap/OT/DT
             if (draggedType === 'shift') {
-                const choice = prompt('Is this shift a:\\n1 = Regular assignment\\n2 = SWAP with coworker\\n3 = OT (Overtime)\\n4 = DT (Double Time)\\n\\nEnter 1, 2, 3, or 4:');
+                var shiftChoice = prompt('Is this shift a:\\n1 = Regular assignment\\n2 = SWAP with coworker\\n3 = OT (Overtime)\\n4 = DT (Double Time)\\n\\nEnter 1, 2, 3, or 4:');
 
-                if (choice === '2') {
-                    this.textContent = 'SW-' + draggedValue;
-                } else if (choice === '3') {
-                    this.textContent = 'OT-' + draggedValue;
-                } else if (choice === '4') {
-                    this.textContent = 'DT-' + draggedValue;
+                if (shiftChoice === '2') {
+                    targetCell.textContent = 'SW-' + draggedValue;
+                } else if (shiftChoice === '3') {
+                    targetCell.textContent = 'OT-' + draggedValue;
+                } else if (shiftChoice === '4') {
+                    targetCell.textContent = 'DT-' + draggedValue;
                 } else {
-                    this.textContent = draggedValue;
+                    targetCell.textContent = draggedValue;
+                }
+            } else if (draggedType === 'compwork') {
+                // COMP WORK - show desk selection popup
+                showDeskPopup(targetCell);
+                return;
+            } else if (draggedType === 'special') {
+                // SPECIAL or TRAINING - ask COMP or OT
+                var prefix = draggedValue;
+                var specChoice = prompt(prefix + ' - Is this:\\n1 = COMP time\\n2 = OT (Overtime)\\n\\nEnter 1 or 2:');
+                if (specChoice === '1') {
+                    targetCell.textContent = 'C-' + prefix;
+                } else if (specChoice === '2') {
+                    targetCell.textContent = 'OT-' + prefix;
+                } else {
+                    targetCell.textContent = prefix;
                 }
             } else {
-                this.textContent = draggedValue;
+                targetCell.textContent = draggedValue;
             }
-            updateCellColor(this);
+            updateCellColor(targetCell);
         }
     });
-});
+}
 </script>
 </body>
 </html>`;
