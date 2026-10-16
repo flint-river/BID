@@ -3826,6 +3826,9 @@ var CURRENT_BID_YEAR = ${bidYear};
 var CURRENT_LINE = '${displayNum}';
 var comparisonLineData = null;
 
+// Seasonal desks data for proper shift transformation
+var SEASONAL_DESKS = ${JSON.stringify(window.SEASONAL_DESKS || [])};
+
 // All lines data embedded from ANNUAL_BID
 var allLinesData = ${JSON.stringify(
     ANNUAL_BID.reduce((acc, line) => {
@@ -3966,9 +3969,10 @@ function displayComparisonLine(lineNum, data) {
         }
     }
 
-    // Fill in the shift data - days array is indexed from April 1
+    // Fill in the shift data - days array is a 12-day rotation pattern
     var compareCells = document.querySelectorAll('.compare-cell');
     var bidYearStart = new Date(CURRENT_BID_YEAR, 3, 1);  // April 1
+    var patternLength = data.days.length;  // Should be 12
 
     for (var c = 0; c < compareCells.length; c++) {
         var cell = compareCells[c];
@@ -3979,8 +3983,27 @@ function displayComparisonLine(lineNum, data) {
         var cellDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
         var dayIndex = Math.floor((cellDate - bidYearStart) / (1000 * 60 * 60 * 24));
 
-        var shift = (dayIndex >= 0 && dayIndex < data.days.length) ? data.days[dayIndex] : '--';
-        if (!shift) shift = '--';
+        // Use modulo to cycle through the 12-day rotation pattern
+        var patternIndex = dayIndex % patternLength;
+        if (patternIndex < 0) patternIndex += patternLength;  // Handle negative
+
+        var shift = data.days[patternIndex] || '--';
+
+        // Check for seasonal desk transformation
+        if (shift !== '--' && SEASONAL_DESKS && SEASONAL_DESKS.length > 0) {
+            for (var s = 0; s < SEASONAL_DESKS.length; s++) {
+                var sd = SEASONAL_DESKS[s];
+                if (shift === sd.code) {
+                    // Check if date is outside active period
+                    var activeFrom = new Date(sd.activeFrom);
+                    var activeTo = new Date(sd.activeTo);
+                    if (cellDate < activeFrom || cellDate > activeTo) {
+                        shift = sd.outsideBecomes || 'XXX';
+                    }
+                    break;
+                }
+            }
+        }
 
         cell.textContent = shift;
         cell.setAttribute('data-value', shift);
