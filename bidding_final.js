@@ -3069,13 +3069,26 @@ function isLineConfirmed(lineNbr) {
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; background: #fff; }
-@page { size: landscape; margin: 0.15in; }
+@page { size: landscape; margin: 0.25in; }
+@page letter { size: 11in 8.5in; margin: 0.25in; }
+@page legal { size: 14in 8.5in; margin: 0.25in; }
 @media print {
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
+    html, body { height: 100%; width: 100%; margin: 0; padding: 0; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .no-print { display: none !important; }
     .tab-content { display: none !important; }
-    .tab-content.print-this { display: block !important; }
+    .tab-content.print-this { display: flex !important; flex-direction: column; height: 100%; }
+    .year-table { flex: 1; height: auto !important; }
+    .title { margin: 3px 0 !important; font-size: 16px !important; }
 }
+body.print-letter { page: letter; }
+body.print-legal { page: legal; }
+body.print-letter .year-table td.shift-cell { height: 22px; font-size: 10px; }
+body.print-letter .year-table td.dow { font-size: 8px; height: 14px; }
+body.print-letter .year-table td.day-num { font-size: 9px; height: 14px; }
+body.print-legal .year-table td.shift-cell { height: 30px; font-size: 12px; }
+body.print-legal .year-table td.dow { font-size: 10px; height: 18px; }
+body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
 .toolbar { margin-bottom: 10px; text-align: center; }
 .toolbar button { padding: 8px 16px; margin: 0 5px; cursor: pointer; font-size: 12px; }
 .tab-header { text-align: right; margin-bottom: 5px; }
@@ -3125,10 +3138,28 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 .drag-item.hol { background: #FFD700; color: #000; }
 .drag-item.ppt { background: #9370DB; color: #fff; }
 .drag-item.off { background: #00FF00; color: #000; }
+.drag-item.special { background: #FF4500; color: #fff; }
+.drag-item.training { background: #4169E1; color: #fff; }
+.drag-item.swapoff { background: #32CD32; color: #000; }
+.drag-item.compoff { background: #98FB98; color: #000; }
+.drag-item.compwork { background: #FFA500; color: #000; }
+.drag-item.shift { background: #00BFFF; color: #000; border: 2px solid #0066cc; }
 .shift-cell.vac { background: #FF69B4 !important; }
 .shift-cell.hol { background: #FFD700 !important; }
 .shift-cell.ppt { background: #9370DB !important; color: #fff; }
+.shift-cell.special { background: #FF4500 !important; color: #fff; }
+.shift-cell.training { background: #4169E1 !important; color: #fff; }
+.shift-cell.swap { background: #00CED1 !important; }
+.shift-cell.swapoff { background: #32CD32 !important; }
+.shift-cell.compoff { background: #98FB98 !important; }
+.shift-cell.compwork { background: #FFA500 !important; }
+.shift-cell.ot { background: #FFA500 !important; }
+.shift-cell.dt { background: #FF6347 !important; }
 .shift-cell.drag-over { outline: 3px dashed #0066cc; }
+.edit-btn { padding: 6px 12px; cursor: pointer; font-size: 11px; font-weight: bold; border: 1px solid #666; border-radius: 4px; background: #fff; margin-left: 5px; }
+.edit-btn:hover { background: #e0e0e0; }
+.reset-btn { background: #dc3545; color: white; border-color: #dc3545; }
+.reset-btn:hover { background: #c82333; }
 </style>
 </head>
 <body>
@@ -3225,13 +3256,34 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 
 <!-- YEAR OVERVIEW TAB -->
 <div id="yearview" class="tab-content">
-    <div class="tab-header no-print"><button onclick="printTab('yearview')">Print Year Overview</button></div>
+    <div class="tab-header no-print">
+        <select id="paperSize" style="padding:5px; margin-right:10px; font-size:12px;">
+            <option value="letter">8.5" x 11" (Letter)</option>
+            <option value="legal">8.5" x 14" (Legal)</option>
+        </select>
+        <button onclick="printYearOverview()">Print Year Overview</button>
+    </div>
     <div class="drag-palette no-print">
-        <span style="font-weight:bold; margin-right:10px;">Drag to calendar:</span>
-        <div class="drag-item vac" draggable="true" data-value="VAC">VAC</div>
-        <div class="drag-item hol" draggable="true" data-value="HOL">HOL</div>
-        <div class="drag-item ppt" draggable="true" data-value="PPT">PPT</div>
-        <div class="drag-item off" draggable="true" data-value="--">OFF (--)</div>
+        <span style="font-weight:bold; margin-right:5px;">Time Off:</span>
+        <div class="drag-item vac" draggable="true" data-value="VAC" data-type="timeoff">VAC</div>
+        <div class="drag-item hol" draggable="true" data-value="HOL" data-type="timeoff">HOL</div>
+        <div class="drag-item ppt" draggable="true" data-value="PPT" data-type="timeoff">PPT</div>
+        <div class="drag-item off" draggable="true" data-value="--" data-type="timeoff">OFF</div>
+        <div class="drag-item swapoff" draggable="true" data-value="SW-OFF" data-type="timeoff">SWAP OFF</div>
+        <div class="drag-item compoff" draggable="true" data-value="COMP-OFF" data-type="timeoff">COMP OFF</div>
+        <div class="drag-item compwork" draggable="true" data-value="COMP-WK" data-type="timeoff">COMP WORK</div>
+        <span style="margin-left:10px; border-left:2px solid #999; padding-left:10px; font-weight:bold;">Special:</span>
+        <div class="drag-item special" draggable="true" data-value="SPEC" data-type="timeoff">SPECIAL</div>
+        <div class="drag-item training" draggable="true" data-value="TRN" data-type="timeoff">TRAINING</div>
+    </div>
+    <div class="drag-palette no-print" id="shiftPalette">
+        <span style="font-weight:bold; margin-right:5px;">Shifts:</span>
+        <!-- Dynamic shifts will be added here by JavaScript -->
+    </div>
+    <div class="drag-palette no-print" style="background:#e8e8e8;">
+        <button onclick="undoChange()" class="edit-btn" title="Undo">↩ UNDO</button>
+        <button onclick="redoChange()" class="edit-btn" title="Redo">↪ REDO</button>
+        <button onclick="resetToOriginal()" class="edit-btn reset-btn" title="Reset to Original">🔄 RESET</button>
     </div>
     <div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
     <table class="year-table">
@@ -3288,6 +3340,115 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 </div>
 
 <script>
+// Undo/Redo history
+let undoStack = [];
+let redoStack = [];
+let originalState = null;
+
+// Save original state on page load and build dynamic shift palette
+window.addEventListener('DOMContentLoaded', function() {
+    originalState = captureState();
+    buildShiftPalette();
+});
+
+// Build dynamic shift palette from existing shifts in schedule
+function buildShiftPalette() {
+    const palette = document.getElementById('shiftPalette');
+    if (!palette) return;
+
+    // Collect unique shifts from the schedule
+    const shifts = new Set();
+    document.querySelectorAll('.shift-cell').forEach(cell => {
+        const val = cell.textContent.trim().toUpperCase();
+        // Exclude time-off codes and empty values
+        if (val && val !== '--' && val !== 'VAC' && val !== 'HOL' && val !== 'PPT' &&
+            val !== 'SPEC' && val !== 'TRN' && !val.startsWith('SW-') &&
+            !val.startsWith('OT-') && !val.startsWith('DT-')) {
+            shifts.add(val);
+        }
+    });
+
+    // Sort shifts alphabetically
+    const sortedShifts = Array.from(shifts).sort();
+
+    // Add drag items for each shift
+    sortedShifts.forEach(shift => {
+        const item = document.createElement('div');
+        item.className = 'drag-item shift';
+        item.draggable = true;
+        item.dataset.value = shift;
+        item.dataset.type = 'shift';
+        item.textContent = shift;
+
+        item.addEventListener('dragstart', function(e) {
+            draggedValue = this.dataset.value;
+            draggedType = this.dataset.type;
+            e.dataTransfer.effectAllowed = 'copy';
+        });
+
+        palette.appendChild(item);
+    });
+}
+
+function captureState() {
+    const cells = document.querySelectorAll('.shift-cell');
+    return Array.from(cells).map(cell => ({
+        text: cell.textContent,
+        classes: cell.className
+    }));
+}
+
+function restoreState(state) {
+    const cells = document.querySelectorAll('.shift-cell');
+    cells.forEach((cell, i) => {
+        if (state[i]) {
+            cell.textContent = state[i].text;
+            cell.className = state[i].classes;
+        }
+    });
+}
+
+function saveToUndo() {
+    undoStack.push(captureState());
+    redoStack = []; // Clear redo when new change is made
+    if (undoStack.length > 50) undoStack.shift(); // Limit history
+}
+
+function undoChange() {
+    if (undoStack.length > 0) {
+        redoStack.push(captureState());
+        const prevState = undoStack.pop();
+        restoreState(prevState);
+    } else {
+        alert('Nothing to undo');
+    }
+}
+
+function redoChange() {
+    if (redoStack.length > 0) {
+        undoStack.push(captureState());
+        const nextState = redoStack.pop();
+        restoreState(nextState);
+    } else {
+        alert('Nothing to redo');
+    }
+}
+
+function resetToOriginal() {
+    const confirmation = prompt('Type "yes" to reset all changes back to the original schedule:');
+    if (confirmation && confirmation.toLowerCase().trim() === 'yes') {
+        if (originalState) {
+            saveToUndo(); // Save current state so they can undo the reset
+            restoreState(originalState);
+            alert('Schedule reset to original!');
+        } else {
+            alert('Original state not available. Refresh the page from the main app.');
+        }
+    } else if (confirmation !== null) {
+        alert('Reset cancelled. You must type "yes" to confirm.');
+    }
+}
+
 function showTab(tabId) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -3306,6 +3467,28 @@ function printTab(tabId) {
     }, 500);
 }
 
+function printYearOverview() {
+    const paperSize = document.getElementById('paperSize').value;
+
+    // Remove any existing print classes
+    document.body.classList.remove('print-letter', 'print-legal');
+
+    // Add the selected paper size class
+    document.body.classList.add('print-' + paperSize);
+
+    // Mark yearview tab to print
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('print-this'));
+    document.getElementById('yearview').classList.add('print-this');
+
+    window.print();
+
+    // Clean up after printing
+    setTimeout(() => {
+        document.getElementById('yearview').classList.remove('print-this');
+        document.body.classList.remove('print-letter', 'print-legal');
+    }, 500);
+}
+
 function downloadAsHTML() {
     const content = document.documentElement.outerHTML;
     const blob = new Blob([content], {type: 'text/html'});
@@ -3318,7 +3501,7 @@ function downloadAsHTML() {
 // Helper to update cell color based on content
 function updateCellColor(cell) {
     const val = cell.textContent.trim().toUpperCase();
-    cell.classList.remove('work', 'off', 'vac', 'hol', 'ppt');
+    cell.classList.remove('work', 'off', 'vac', 'hol', 'ppt', 'special', 'training', 'swap', 'swapoff', 'compoff', 'compwork', 'ot', 'dt');
     if (val === '--' || val === '') {
         cell.classList.add('off');
     } else if (val === 'VAC') {
@@ -3327,6 +3510,22 @@ function updateCellColor(cell) {
         cell.classList.add('hol');
     } else if (val === 'PPT') {
         cell.classList.add('ppt');
+    } else if (val === 'SPEC' || val === 'SPECIAL') {
+        cell.classList.add('special');
+    } else if (val === 'TRN' || val === 'TRAINING') {
+        cell.classList.add('training');
+    } else if (val === 'SW-OFF' || val === 'SWAP-OFF') {
+        cell.classList.add('swapoff');
+    } else if (val === 'COMP-OFF') {
+        cell.classList.add('compoff');
+    } else if (val === 'COMP-WK' || val === 'COMP-WORK') {
+        cell.classList.add('compwork');
+    } else if (val.startsWith('SW-')) {
+        cell.classList.add('swap');
+    } else if (val.startsWith('OT-')) {
+        cell.classList.add('ot');
+    } else if (val.startsWith('DT-')) {
+        cell.classList.add('dt');
     } else {
         cell.classList.add('work');
     }
@@ -3335,6 +3534,13 @@ function updateCellColor(cell) {
 // Dynamic coloring for all editable shift cells
 document.querySelectorAll('[contenteditable="true"]').forEach(cell => {
     if (cell.classList.contains('work') || cell.classList.contains('off') || cell.classList.contains('shift-cell') || cell.closest('.pattern-table') || cell.closest('.schedule-table')) {
+        cell.addEventListener('focus', function() {
+            if (!this.dataset.editing) {
+                this.dataset.editing = 'true';
+                this.dataset.originalValue = this.textContent;
+            }
+        });
+
         cell.addEventListener('input', function() {
             updateCellColor(this);
         });
@@ -3345,16 +3551,23 @@ document.querySelectorAll('[contenteditable="true"]').forEach(cell => {
                 this.textContent = '--';
             }
             updateCellColor(this);
+            if (this.dataset.editing && this.dataset.originalValue !== this.textContent) {
+                saveToUndo();
+            }
+            delete this.dataset.editing;
+            delete this.dataset.originalValue;
         });
     }
 });
 
 // Drag and drop functionality
 let draggedValue = null;
+let draggedType = null;
 
 document.querySelectorAll('.drag-item').forEach(item => {
     item.addEventListener('dragstart', function(e) {
         draggedValue = this.dataset.value;
+        draggedType = this.dataset.type || 'timeoff';
         e.dataTransfer.effectAllowed = 'copy';
     });
 });
@@ -3373,7 +3586,24 @@ document.querySelectorAll('.shift-cell').forEach(cell => {
         e.preventDefault();
         this.classList.remove('drag-over');
         if (draggedValue) {
-            this.textContent = draggedValue;
+            saveToUndo();
+
+            // If it's a shift (not time-off), ask about swap/OT/DT
+            if (draggedType === 'shift') {
+                const choice = prompt('Is this shift a:\\n1 = Regular assignment\\n2 = SWAP with coworker\\n3 = OT (Overtime)\\n4 = DT (Double Time)\\n\\nEnter 1, 2, 3, or 4:');
+
+                if (choice === '2') {
+                    this.textContent = 'SW-' + draggedValue;
+                } else if (choice === '3') {
+                    this.textContent = 'OT-' + draggedValue;
+                } else if (choice === '4') {
+                    this.textContent = 'DT-' + draggedValue;
+                } else {
+                    this.textContent = draggedValue;
+                }
+            } else {
+                this.textContent = draggedValue;
+            }
             updateCellColor(this);
         }
     });
