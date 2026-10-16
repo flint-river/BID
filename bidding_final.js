@@ -3017,7 +3017,7 @@ function isLineConfirmed(lineNbr) {
         XLSX.writeFile(wb, fileName);
     }
 
-    // Export Year Overview as HTML with colors (opens in browser tab with editable cells)
+    // Export full line data as HTML with tabs (Schedule, Summary, Year Overview)
     function exportYearOverviewHTML(lineNbr) {
         const calData = ALL_LINES_CALENDAR[lineNbr];
         if (!calData) {
@@ -3035,52 +3035,183 @@ function isLineConfirmed(lineNbr) {
         const displayNum = lineData.lineNbr;
         const lineType = lineData.lineDesc || '';
         const dayAbbrevs = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
         const monthOrder = [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2];
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-        // Build HTML matching user's exact format
+        // Get holiday info
+        const holidaysObj = window.HOLIDAYS || {};
+        const patternMap = window.HOLIDAY_PATTERN_MAP || {};
+
+        // Sort dates
+        const sortedDates = Object.keys(calData.days).sort((a, b) => {
+            return new Date(a.replace(/-/g, '/')) - new Date(b.replace(/-/g, '/'));
+        });
+
+        // Calculate stats
+        let workDays = 0, offDays = 0, holidaysOff = 0;
+        sortedDates.forEach(dateStr => {
+            const dayData = calData.days[dateStr];
+            if (dayData.s === '--') {
+                offDays++;
+                if (holidaysObj[dateStr]) holidaysOff++;
+            } else {
+                workDays++;
+            }
+        });
+
+        // Build HTML with tabs
         let html = `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Line ${displayNum} Year Overview</title>
+<title>Line ${displayNum} - ${bidYear}/${bidYear + 1}</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
-body { font-family: Arial, sans-serif; font-size: 11px; padding: 10px; background: #fff; display: flex; flex-direction: column; }
-@page { size: landscape; margin: 0.2in; }
+body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; background: #fff; }
+@page { size: landscape; margin: 0.15in; }
 @media print {
-    html, body { height: auto; }
-    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; display: block; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; }
     .no-print { display: none !important; }
-    .title { font-size: 14px; margin-bottom: 4px; }
-    table { width: 100%; }
-    td { height: auto; padding: 2px 1px; font-size: 9px; }
-    td.shift-cell { height: 22px; }
-    .dow { font-size: 8px; }
+    .tab-content { display: block !important; page-break-after: always; }
+    .tab-content:last-child { page-break-after: auto; }
 }
-.title { text-align: center; font-size: 16px; font-weight: bold; margin-bottom: 8px; }
-table { border-collapse: collapse; width: 100%; table-layout: fixed; flex: 1; }
-td { border: 1px solid #888; text-align: center; padding: 1px 2px; font-size: 10px; }
-td.shift-cell { height: 24px; }
-td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
-.month-label { font-weight: bold; background: #E0E0E0; width: 30px; min-width: 30px; }
-.day-num { background: #87CEEB; font-weight: bold; color: #000; }
+.toolbar { margin-bottom: 10px; text-align: center; }
+.toolbar button { padding: 8px 16px; margin: 0 5px; cursor: pointer; font-size: 12px; }
+.tabs { display: flex; gap: 5px; margin-bottom: 10px; border-bottom: 2px solid #0066cc; padding-bottom: 5px; }
+.tab-btn { padding: 10px 20px; cursor: pointer; border: 1px solid #ccc; background: #f0f0f0; border-radius: 5px 5px 0 0; font-size: 14px; font-weight: bold; }
+.tab-btn.active { background: #0066cc; color: white; border-color: #0066cc; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.title { text-align: center; font-size: 18px; font-weight: bold; margin: 10px 0; }
+
+/* Schedule tab styles */
+.schedule-table { width: 100%; max-width: 800px; margin: 0 auto; }
+.schedule-table th, .schedule-table td { border: 1px solid #888; padding: 6px 10px; text-align: left; }
+.schedule-table th { background: #0066cc; color: white; }
+.schedule-table tr:nth-child(even) { background: #f5f5f5; }
+.schedule-table .work { background: #00FFFF; }
+.schedule-table .off { background: #00FF00; }
+.schedule-table .holiday { background: #FFD700; }
+
+/* Summary tab styles */
+.summary-section { max-width: 800px; margin: 0 auto 20px auto; }
+.summary-section h3 { background: #0066cc; color: white; padding: 8px 12px; margin-bottom: 10px; }
+.summary-table { width: 100%; margin-bottom: 20px; }
+.summary-table td { border: 1px solid #888; padding: 8px; }
+.summary-table .label { background: #e0e0e0; font-weight: bold; width: 150px; }
+.pattern-table td { border: 1px solid #888; padding: 8px; text-align: center; min-width: 50px; }
+.pattern-table .header { background: #87CEEB; font-weight: bold; }
+.pattern-table .work { background: #00FFFF; }
+.pattern-table .off { background: #00FF00; }
+
+/* Year Overview styles */
+.year-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+.year-table td { border: 1px solid #888; text-align: center; padding: 2px; font-size: 10px; }
+.year-table td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
+.month-label { font-weight: bold; background: #E0E0E0; width: 35px; }
+.day-num { background: #87CEEB; font-weight: bold; }
 .dow { background: #F5F5F5; font-size: 9px; }
 .work { background: #00FFFF; }
 .off { background: #00FF00; }
-.toolbar { margin-bottom: 10px; text-align: center; flex-shrink: 0; }
-.toolbar button { padding: 8px 16px; margin: 0 5px; cursor: pointer; font-size: 12px; }
+.shift-cell { height: 22px; font-weight: bold; }
 </style>
 </head>
 <body>
 <div class="toolbar no-print">
-    <button onclick="window.print()">Print</button>
+    <button onclick="window.print()">Print All</button>
     <button onclick="downloadAsHTML()">Download HTML</button>
-    <span style="margin-left:20px; color:#666;">Click any cell to edit - colors update automatically</span>
+    <span style="margin-left:20px; color:#666;">Click any shift cell to edit - colors update automatically</span>
 </div>
-<div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
-<table>
+
+<div class="tabs no-print">
+    <button class="tab-btn active" onclick="showTab('schedule')">Schedule</button>
+    <button class="tab-btn" onclick="showTab('summary')">Summary</button>
+    <button class="tab-btn" onclick="showTab('yearview')">Year Overview</button>
+</div>
+
+<!-- SCHEDULE TAB -->
+<div id="schedule" class="tab-content active">
+    <div class="title">${bidYear}/${bidYear + 1} LINE ${displayNum}${lineType ? ' (' + lineType + ')' : ''} - Daily Schedule</div>
+    <table class="schedule-table">
+        <tr><th>Date</th><th>Day</th><th>Shift</th><th>Holiday</th></tr>
+`;
+        // Add schedule rows
+        sortedDates.forEach(dateStr => {
+            const dayData = calData.days[dateStr];
+            const dateObj = new Date(dateStr.replace(/-/g, '/'));
+            const dayOfWeek = dayNames[dateObj.getDay()];
+            const shift = dayData.s || '--';
+            const cellClass = shift === '--' ? 'off' : 'work';
+
+            let holidayName = '';
+            const holidayAbbrev = holidaysObj[dateStr];
+            if (holidayAbbrev && patternMap[holidayAbbrev]) {
+                holidayName = patternMap[holidayAbbrev].name || holidayAbbrev;
+            }
+
+            const formattedDate = dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+            const holidayClass = holidayName ? 'holiday' : '';
+
+            html += `<tr><td>${formattedDate}</td><td>${dayOfWeek}</td><td class="${cellClass}" contenteditable="true">${shift}</td><td class="${holidayClass}">${holidayName}</td></tr>\n`;
+        });
+
+        html += `</table>
+</div>
+
+<!-- SUMMARY TAB -->
+<div id="summary" class="tab-content">
+    <div class="title">${bidYear}/${bidYear + 1} LINE ${displayNum}${lineType ? ' (' + lineType + ')' : ''} - Summary</div>
+    <div class="summary-section">
+        <h3>Line Information</h3>
+        <table class="summary-table">
+            <tr><td class="label">Line Number</td><td contenteditable="true">${displayNum}</td></tr>
+            <tr><td class="label">Line Type</td><td contenteditable="true">${lineType}</td></tr>
+            <tr><td class="label">Bid Year</td><td>${bidYear}-${bidYear + 1}</td></tr>
+        </table>
+
+        <h3>Statistics</h3>
+        <table class="summary-table">
+            <tr><td class="label">Work Days</td><td>${workDays}</td></tr>
+            <tr><td class="label">Off Days</td><td>${offDays}</td></tr>
+            <tr><td class="label">Holidays Off</td><td>${holidaysOff} of 12</td></tr>
+        </table>
+
+        <h3>12-Day Pattern</h3>
+        <table class="pattern-table">
+            <tr>`;
+        for (let i = 1; i <= 12; i++) {
+            html += `<td class="header">Day ${i}</td>`;
+        }
+        html += `</tr><tr>`;
+        lineData.days.forEach(shift => {
+            const cellClass = shift === '--' ? 'off' : 'work';
+            html += `<td class="${cellClass}" contenteditable="true">${shift}</td>`;
+        });
+        html += `</tr></table>
+
+        <h3>Holiday Schedule</h3>
+        <table class="summary-table">
+            <tr><td class="label" style="width:200px;">Holiday</td><td style="width:150px;">Date</td><td>Status</td></tr>`;
+
+        Object.keys(patternMap).forEach(abbrev => {
+            const h = patternMap[abbrev];
+            if (h && h.date) {
+                const dayData = calData.days[h.date];
+                const isOff = dayData && dayData.s === '--';
+                const statusClass = isOff ? 'off' : 'work';
+                html += `<tr><td>${h.name || abbrev}</td><td>${h.fullDate || h.date}</td><td class="${statusClass}">${isOff ? 'OFF' : 'WORK'}</td></tr>`;
+            }
+        });
+
+        html += `</table>
+    </div>
+</div>
+
+<!-- YEAR OVERVIEW TAB -->
+<div id="yearview" class="tab-content">
+    <div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
+    <table class="year-table">
 `;
         // Header row with day numbers 1-31
         html += '<tr><td class="month-label"></td>';
@@ -3089,13 +3220,13 @@ td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
         }
         html += '<td class="month-label"></td></tr>\n';
 
-        // Build each month (3 rows per month: day nums, day of week, shifts)
+        // Build each month
         monthOrder.forEach(monthIdx => {
             const year = monthIdx >= 3 ? bidYear : bidYear + 1;
             const daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
             const monthAbbrev = monthNames[monthIdx];
 
-            // Row 1: Day of week
+            // Day of week row
             html += '<tr><td class="month-label"></td>';
             for (let d = 1; d <= 31; d++) {
                 if (d <= daysInMonth) {
@@ -3107,7 +3238,7 @@ td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
             }
             html += '<td class="month-label"></td></tr>\n';
 
-            // Row 2: Shift codes with month labels
+            // Shift codes row
             html += '<tr><td class="month-label">' + monthAbbrev + '</td>';
             for (let d = 1; d <= 31; d++) {
                 if (d <= daysInMonth) {
@@ -3123,7 +3254,7 @@ td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
             html += '<td class="month-label">' + monthAbbrev + '</td></tr>\n';
         });
 
-        // Footer row with day numbers 1-31
+        // Footer row
         html += '<tr><td class="month-label"></td>';
         for (let d = 1; d <= 31; d++) {
             html += '<td class="day-num">' + d + '</td>';
@@ -3131,55 +3262,62 @@ td:focus { outline: 2px solid #0066cc; background: #ffffcc !important; }
         html += '<td class="month-label"></td></tr>\n';
 
         html += `</table>
+</div>
+
 <script>
+function showTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.target.classList.add('active');
+}
+
 function downloadAsHTML() {
     const content = document.documentElement.outerHTML;
     const blob = new Blob([content], {type: 'text/html'});
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'Line_${displayNum}_YearOverview.html';
+    a.download = 'Line_${displayNum}_${bidYear}.html';
     a.click();
 }
 
-// Dynamic coloring - update cell color based on content
-document.querySelectorAll('.shift-cell').forEach(cell => {
-    cell.addEventListener('input', function() {
-        const val = this.textContent.trim();
-        this.classList.remove('work', 'off');
-        if (val === '--' || val === '') {
-            this.classList.add('off');
-        } else {
-            this.classList.add('work');
-        }
-    });
+// Dynamic coloring for all editable shift cells
+document.querySelectorAll('[contenteditable="true"]').forEach(cell => {
+    if (cell.classList.contains('work') || cell.classList.contains('off') || cell.closest('.pattern-table') || cell.closest('.schedule-table')) {
+        cell.addEventListener('input', function() {
+            const val = this.textContent.trim();
+            this.classList.remove('work', 'off');
+            if (val === '--' || val === '') {
+                this.classList.add('off');
+            } else {
+                this.classList.add('work');
+            }
+        });
 
-    // Also handle blur to clean up
-    cell.addEventListener('blur', function() {
-        const val = this.textContent.trim();
-        if (val === '') {
-            this.textContent = '--';
-            this.classList.remove('work');
-            this.classList.add('off');
-        }
-    });
+        cell.addEventListener('blur', function() {
+            const val = this.textContent.trim();
+            if (val === '' && (this.classList.contains('work') || this.classList.contains('off'))) {
+                this.textContent = '--';
+                this.classList.remove('work');
+                this.classList.add('off');
+            }
+        });
+    }
 });
 </script>
 </body>
 </html>`;
 
-        // Create blob URL and open in new tab (more reliable than window.open with document.write)
+        // Create blob URL and open in new tab
         const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
         const blobUrl = URL.createObjectURL(blob);
-
-        // Try to open in new tab
         const newWindow = window.open(blobUrl, '_blank');
 
-        // If popup was blocked, fall back to download
         if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
             alert('Popup blocked! The file will download instead. Open it in your browser to view and edit.');
             const a = document.createElement('a');
             a.href = blobUrl;
-            a.download = 'Line_' + displayNum + '_YearOverview_' + bidYear + '.html';
+            a.download = 'Line_' + displayNum + '_' + bidYear + '.html';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
