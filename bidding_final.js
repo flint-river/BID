@@ -3766,6 +3766,20 @@ for (var di = 0; di < dragItems.length; di++) {
 
 var shiftCells = document.querySelectorAll('.shift-cell');
 for (var sc = 0; sc < shiftCells.length; sc++) {
+    // Mousedown - temporarily disable contenteditable to allow drag
+    shiftCells[sc].addEventListener('mousedown', function(e) {
+        var cell = this;
+        var cellText = cell.textContent.trim();
+        // Only enable drag if cell has a shift (not empty or off)
+        if (cellText && cellText !== '--') {
+            cell.setAttribute('contenteditable', 'false');
+            // Re-enable contenteditable after a short delay (allows drag to start)
+            setTimeout(function() {
+                cell.setAttribute('contenteditable', 'true');
+            }, 200);
+        }
+    });
+
     // Make main cells draggable for swap planning
     shiftCells[sc].addEventListener('dragstart', function(e) {
         var cellText = this.textContent.trim();
@@ -3777,6 +3791,11 @@ for (var sc = 0; sc < shiftCells.length; sc++) {
         } else {
             e.preventDefault();
         }
+    });
+
+    // Re-enable contenteditable after drag ends
+    shiftCells[sc].addEventListener('dragend', function(e) {
+        this.setAttribute('contenteditable', 'true');
     });
 
     shiftCells[sc].addEventListener('dragover', function(e) {
