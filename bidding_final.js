@@ -3966,13 +3966,21 @@ function displayComparisonLine(lineNum, data) {
         }
     }
 
-    // Fill in the shift data
+    // Fill in the shift data - days array is indexed from April 1
     var compareCells = document.querySelectorAll('.compare-cell');
+    var bidYearStart = new Date(CURRENT_BID_YEAR, 3, 1);  // April 1
+
     for (var c = 0; c < compareCells.length; c++) {
         var cell = compareCells[c];
         var dateStr = cell.getAttribute('data-date');
-        var dayData = data.days[dateStr];
-        var shift = dayData ? dayData.s : '--';
+
+        // Convert date string to day index (days since April 1)
+        var parts = dateStr.split('-');
+        var cellDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        var dayIndex = Math.floor((cellDate - bidYearStart) / (1000 * 60 * 60 * 24));
+
+        var shift = (dayIndex >= 0 && dayIndex < data.days.length) ? data.days[dayIndex] : '--';
+        if (!shift) shift = '--';
 
         cell.textContent = shift;
         cell.setAttribute('data-value', shift);
