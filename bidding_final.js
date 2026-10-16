@@ -3275,7 +3275,9 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
 .work { background: #00FFFF; }
 .off { background: #00FF00; }
 .shift-cell { height: 22px; font-weight: bold; }
-.drag-palette { display: flex; gap: 10px; justify-content: center; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 8px; }
+.drag-palette { display: flex; gap: 8px; justify-content: flex-start; margin: 8px 0; padding: 8px 10px; background: #f0f0f0; border-radius: 8px; align-items: center; }
+.instructions { background: #e8f4fc; border: 1px solid #0066cc; border-radius: 8px; padding: 10px 15px; margin: 10px 0; font-size: 11px; color: #333; }
+.instructions b { color: #0066cc; }
 .drag-item { padding: 8px 16px; border-radius: 4px; cursor: grab; font-weight: bold; font-size: 12px; border: 2px solid #333; user-select: none; }
 .drag-item:active { cursor: grabbing; }
 .drag-item.vac { background: #FF69B4; color: #000; }
@@ -3407,6 +3409,12 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
             <option value="legal">8.5" x 14" (Legal)</option>
         </select>
         <button onclick="printYearOverview()">Print Year Overview</button>
+    </div>
+    <div class="instructions no-print">
+        <b>How to Edit:</b> Click any cell to type directly, or <b>drag & drop</b> items from the palettes below.
+        <b>Shifts:</b> Prompts for Regular/SWAP/OT/DT. <b>COMP WK:</b> Select a desk. <b>SPEC/TRN:</b> Choose COMP or OT.
+        Use <b>UNDO/REDO</b> to navigate changes. <b>RESET</b> restores original (type "yes" to confirm).
+        <b>Save:</b> Ctrl+S to download. Select paper size before printing.
     </div>
     <div class="drag-palette no-print">
         <span style="font-weight:bold; margin-right:5px;">Time Off:</span>
