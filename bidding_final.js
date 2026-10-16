@@ -3118,11 +3118,22 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 .work { background: #00FFFF; }
 .off { background: #00FF00; }
 .shift-cell { height: 22px; font-weight: bold; }
+.drag-palette { display: flex; gap: 10px; justify-content: center; margin: 10px 0; padding: 10px; background: #f0f0f0; border-radius: 8px; }
+.drag-item { padding: 8px 16px; border-radius: 4px; cursor: grab; font-weight: bold; font-size: 12px; border: 2px solid #333; user-select: none; }
+.drag-item:active { cursor: grabbing; }
+.drag-item.vac { background: #FF69B4; color: #000; }
+.drag-item.hol { background: #FFD700; color: #000; }
+.drag-item.ppt { background: #9370DB; color: #fff; }
+.drag-item.off { background: #00FF00; color: #000; }
+.shift-cell.vac { background: #FF69B4 !important; }
+.shift-cell.hol { background: #FFD700 !important; }
+.shift-cell.ppt { background: #9370DB !important; color: #fff; }
+.shift-cell.drag-over { outline: 3px dashed #0066cc; }
 </style>
 </head>
 <body>
 <div class="toolbar no-print">
-    <button onclick="downloadAsHTML()">Download HTML</button>
+    <button onclick="downloadAsHTML()" style="background:#28a745; color:white; font-weight:bold;">SAVE</button>
     <span style="margin-left:20px; color:#666;">Click any shift cell to edit - colors update automatically</span>
 </div>
 
@@ -3215,6 +3226,13 @@ body { font-family: Arial, sans-serif; font-size: 12px; padding: 10px; backgroun
 <!-- YEAR OVERVIEW TAB -->
 <div id="yearview" class="tab-content">
     <div class="tab-header no-print"><button onclick="printTab('yearview')">Print Year Overview</button></div>
+    <div class="drag-palette no-print">
+        <span style="font-weight:bold; margin-right:10px;">Drag to calendar:</span>
+        <div class="drag-item vac" draggable="true" data-value="VAC">VAC</div>
+        <div class="drag-item hol" draggable="true" data-value="HOL">HOL</div>
+        <div class="drag-item ppt" draggable="true" data-value="PPT">PPT</div>
+        <div class="drag-item off" draggable="true" data-value="--">OFF (--)</div>
+    </div>
     <div class="title">${bidYear}/${bidYear + 1} LINE NUMBER ${displayNum}${lineType ? '-' + lineType : ''}</div>
     <table class="year-table">
 `;
@@ -3297,28 +3315,68 @@ function downloadAsHTML() {
     a.click();
 }
 
+// Helper to update cell color based on content
+function updateCellColor(cell) {
+    const val = cell.textContent.trim().toUpperCase();
+    cell.classList.remove('work', 'off', 'vac', 'hol', 'ppt');
+    if (val === '--' || val === '') {
+        cell.classList.add('off');
+    } else if (val === 'VAC') {
+        cell.classList.add('vac');
+    } else if (val === 'HOL') {
+        cell.classList.add('hol');
+    } else if (val === 'PPT') {
+        cell.classList.add('ppt');
+    } else {
+        cell.classList.add('work');
+    }
+}
+
 // Dynamic coloring for all editable shift cells
 document.querySelectorAll('[contenteditable="true"]').forEach(cell => {
-    if (cell.classList.contains('work') || cell.classList.contains('off') || cell.closest('.pattern-table') || cell.closest('.schedule-table')) {
+    if (cell.classList.contains('work') || cell.classList.contains('off') || cell.classList.contains('shift-cell') || cell.closest('.pattern-table') || cell.closest('.schedule-table')) {
         cell.addEventListener('input', function() {
-            const val = this.textContent.trim();
-            this.classList.remove('work', 'off');
-            if (val === '--' || val === '') {
-                this.classList.add('off');
-            } else {
-                this.classList.add('work');
-            }
+            updateCellColor(this);
         });
 
         cell.addEventListener('blur', function() {
             const val = this.textContent.trim();
-            if (val === '' && (this.classList.contains('work') || this.classList.contains('off'))) {
+            if (val === '') {
                 this.textContent = '--';
-                this.classList.remove('work');
-                this.classList.add('off');
             }
+            updateCellColor(this);
         });
     }
+});
+
+// Drag and drop functionality
+let draggedValue = null;
+
+document.querySelectorAll('.drag-item').forEach(item => {
+    item.addEventListener('dragstart', function(e) {
+        draggedValue = this.dataset.value;
+        e.dataTransfer.effectAllowed = 'copy';
+    });
+});
+
+document.querySelectorAll('.shift-cell').forEach(cell => {
+    cell.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('drag-over');
+    });
+
+    cell.addEventListener('dragleave', function(e) {
+        this.classList.remove('drag-over');
+    });
+
+    cell.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('drag-over');
+        if (draggedValue) {
+            this.textContent = draggedValue;
+            updateCellColor(this);
+        }
+    });
 });
 </script>
 </body>
