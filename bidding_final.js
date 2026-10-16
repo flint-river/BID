@@ -3444,7 +3444,7 @@ ${shiftPaletteHTML}    <div class="drag-palette no-print" style="background:#e8e
         <button onclick="redoChange()" class="edit-btn" title="Redo">↪ REDO</button>
         <button onclick="resetToOriginal()" class="edit-btn reset-btn" title="Reset to Original">🔄 RESET</button>
         <button id="swapModeBtn" onclick="toggleSwapMode()" class="edit-btn" style="background:#9b59b6; margin-left:10px;" title="Switch to Give Shift mode to give your shifts to comparison line">🔄 Give Shift Mode</button>
-        <span id="modeStatus" style="display:none; margin-left:10px; padding:5px 12px; border-radius:4px; color:#fff; font-size:11px;"></span>
+        <span id="modeStatus" style="display:inline-block; margin-left:10px; padding:5px 12px; border-radius:4px; color:#fff; font-size:11px; background:#3498db;"><b>EDIT MODE</b> - Click cells to type</span>
         <span style="margin-left:20px; border-left:2px solid #999; padding-left:15px;">
             <b>Compare with:</b>
             <select id="compareLineSelect" style="padding:4px; min-width:180px;" onchange="previewComparisonLine()">
@@ -3785,7 +3785,9 @@ function toggleSwapMode() {
         // Back to EDIT mode
         btn.innerHTML = '🔄 Give Shift Mode';
         btn.style.background = '#9b59b6';
-        status.style.display = 'none';
+        status.innerHTML = '<b>EDIT MODE</b> - Click cells to type';
+        status.style.background = '#3498db';
+        status.style.display = 'inline-block';
         for (var i = 0; i < cells.length; i++) {
             cells[i].setAttribute('contenteditable', 'true');
             cells[i].style.cursor = 'text';
