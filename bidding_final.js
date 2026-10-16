@@ -4335,13 +4335,15 @@ function isLineConfirmed(lineNbr) {
         var offDays = 0;
         var holidaysOff = 0;
         var ptoConflicts = 0;
-        
-        // Use the same HOLIDAYS constant
+
+        // Use dynamic HOLIDAYS from current bid year
+        var holidaysObj = window.HOLIDAYS || HOLIDAYS || {};
+
         for (var dateStr in calendar.days) {
             var dayData = calendar.days[dateStr];
             if (dayData.s === '--') {
                 offDays++;
-                if (HOLIDAYS[dateStr]) {
+                if (holidaysObj[dateStr]) {
                     holidaysOff++;
                 }
             } else {
@@ -4399,22 +4401,25 @@ function isLineConfirmed(lineNbr) {
         
         html += '<h2>Holiday Schedule</h2>';
         html += '<div class="holidays">';
-        
-        var holidayList = [
-            { date: '2026-4-5', name: 'Easter 1' },
-            { date: '2026-5-10', name: 'Mothers Day' },
-            { date: '2026-5-25', name: 'Memorial Day' },
-            { date: '2026-6-21', name: 'Fathers Day' },
-            { date: '2026-7-4', name: 'July 4th' },
-            { date: '2026-9-7', name: 'Labor Day' },
-            { date: '2026-11-26', name: 'Thanksgiving' },
-            { date: '2026-12-25', name: 'Christmas' },
-            { date: '2027-1-1', name: 'New Years Day' },
-            { date: '2027-2-14', name: 'Super Bowl Sunday' },
-            { date: '2027-3-17', name: 'St Patricks Day' },
-            { date: '2027-3-28', name: 'Easter 2' }
-        ];
-        
+
+        // Use dynamic HOLIDAYS from the current bid year
+        var holidayList = [];
+        var holidaysObj = window.HOLIDAYS || HOLIDAYS || {};
+
+        // Convert HOLIDAYS object to sorted array
+        Object.keys(holidaysObj).forEach(function(dateStr) {
+            var h = holidaysObj[dateStr];
+            holidayList.push({
+                date: dateStr,
+                name: h.name || h.abbrev || dateStr
+            });
+        });
+
+        // Sort by date
+        holidayList.sort(function(a, b) {
+            return new Date(a.date) - new Date(b.date);
+        });
+
         holidayList.forEach(function(h) {
             var dayData = calendar.days[h.date];
             var isOff = dayData && dayData.s === '--';
