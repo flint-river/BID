@@ -722,14 +722,21 @@
                 window.ANNUAL_BID = transformed;
                 ANNUAL_BID = transformed;
 
-                // Store metadata
+                // Store metadata including seasonal desks
                 window.PATTERN_METADATA = {
                     bidYear: patternJson.bidYear,
                     groups: patternJson.groups,
                     generatedAt: patternJson.generatedAt,
                     uploadedAt: new Date().toISOString(),
-                    fileName: file.name
+                    fileName: file.name,
+                    seasonalDesks: patternJson.seasonalDesks || []
                 };
+
+                // Also set SEASONAL_DESKS at window level for calendar generation
+                window.SEASONAL_DESKS = patternJson.seasonalDesks || [];
+                if (window.SEASONAL_DESKS.length > 0) {
+                    console.log(`[PatternUpload] Seasonal desks loaded: ${window.SEASONAL_DESKS.map(sd => sd.code).join(', ')}`);
+                }
 
                 // Save to Firebase for persistence
                 const patternsPath = (typeof BidYearIntegration !== 'undefined')
@@ -3425,6 +3432,11 @@ body.print-legal .year-table td.day-num { font-size: 11px; height: 18px; }
         <b>Receive shift:</b> Load a comparison line (orange), then drag THEIR shift to YOUR cell = auto-swap.
         <b>Give shift:</b> Click "Give Shift Mode" button, double-click YOUR cell (red border), click THEIR cell = you give it up.
         <b>UNDO/REDO/RESET</b> for changes. <b>Ctrl+S</b> to download.
+    </div>
+    <div class="no-print" style="background:#fff3cd; border:1px solid #ffc107; border-radius:6px; padding:8px 12px; margin:5px 0; font-size:11px;">
+        <b>SAVE REMINDER:</b> Press <b>Ctrl+S</b> to save this file to your <b>Downloads</b> folder.
+        <span style="color:#c0392b;"><b>VDI Users:</b></span> Downloads folder is cleared when you sign out!
+        After saving, <b>move the file to your Desktop</b> or a network drive to keep it permanently.
     </div>
     <div class="drag-palette no-print">
         <span style="font-weight:bold; margin-right:5px;">Time Off:</span>
