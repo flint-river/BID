@@ -971,7 +971,11 @@
                         window.ANNUAL_BID = firebaseData.data;
                         window.PATTERN_METADATA = firebaseData.metadata || {};
                         window.PATTERN_METADATA.source = 'firebase';
-                        window.SEASONAL_DESKS = firebaseData.seasonalDesks || [];
+                        // Seasonal desks are stored in metadata
+                        window.SEASONAL_DESKS = firebaseData.metadata?.seasonalDesks || [];
+                        if (window.SEASONAL_DESKS.length > 0) {
+                            console.log(`[YearTimeline] Seasonal desks: ${window.SEASONAL_DESKS.map(sd => sd.code).join(', ')}`);
+                        }
 
                         console.log(`[YearTimeline] Loaded ${firebaseData.data.length} lines from Firebase`);
                         return firebaseData.data;
@@ -983,7 +987,11 @@
                             bidYear: firebaseData.bidYear,
                             source: 'firebase'
                         };
+                        // Raw pattern data has seasonalDesks at top level
                         window.SEASONAL_DESKS = firebaseData.seasonalDesks || [];
+                        if (window.SEASONAL_DESKS.length > 0) {
+                            console.log(`[YearTimeline] Seasonal desks: ${window.SEASONAL_DESKS.map(sd => sd.code).join(', ')}`);
+                        }
 
                         console.log(`[YearTimeline] Transformed ${annualBid.length} lines from Firebase`);
                         return annualBid;
